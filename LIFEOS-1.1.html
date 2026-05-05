@@ -1,0 +1,2369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>LIFE OS - 个人激励系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(135deg, #101f2c 0%, #0b1620 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #f0f3f8;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* 顶部状态栏 */
+        .top-status-bar {
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,200,100,0.2);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-coin {
+            background: #f3b33d;
+            border-radius: 20px;
+            padding: 4px 12px;
+            color: #1e2a2f;
+            font-weight: bold;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-level {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.85rem;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 80px; /* 为底部导航留出空间 */
+        }
+        
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+        
+        /* 底部导航栏 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,200,100,0.2);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 100;
+        }
+        
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            color: #bfd9f0;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+        
+        .nav-btn.active {
+            background: #ffb347;
+            color: #1f2a2f;
+            transform: translateY(-4px);
+        }
+        
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+        
+        .nav-text {
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        /* 页面通用样式 */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 仪表盘页面 */
+        .dashboard-section {
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,200,100,0.3);
+        }
+        
+        .attr-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            background: rgba(20,30,40,0.7);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .attr-card {
+            flex: 1;
+            text-align: center;
+            background: #1f2e38bb;
+            border-radius: 16px;
+            padding: 8px 4px;
+            min-width: 60px;
+        }
+        
+        .attr-name {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        
+        .attr-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffdfaa;
+        }
+        
+        /* 任务卡片样式 */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .task-card {
+            background: #0f1b22;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border-left: 6px solid #f5b042;
+        }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-name {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+        
+        .task-meta {
+            font-size: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        .reward-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .reward-tags span {
+            background: #2c4f3a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        
+        .complete-btn {
+            background: #4c7a5c;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            font-size: 0.85rem;
+        }
+        
+        .complete-btn:disabled {
+            background: #5a6e6e;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .complete-btn.completed {
+            background: #5a6e6e;
+        }
+        
+        /* 日历样式 */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+        
+        .cal-day {
+            background: #1f2e38;
+            border-radius: 12px;
+            padding: 8px 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        
+        .cal-day.has-score {
+            background: #4c7a5c;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .cal-day.today {
+            border: 2px solid #f5a623;
+        }
+        
+        /* 进度条样式 */
+        .progress-bar-bg {
+            height: 8px;
+            background: #2a3a44;
+            border-radius: 10px;
+            margin: 12px 0;
+            width: 100%;
+        }
+        
+        .progress-fill {
+            height: 8px;
+            background: #f5a623;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        /* 主线选项卡 */
+        .mainline-tabs {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .mainline-btn {
+            background: #1f2e38;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            color: #e2eaf1;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .mainline-btn.active-main {
+            background: #f5a623;
+            color: #1e2a2f;
+        }
+        
+        /* 奖励兑换 */
+        .reward-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #17242e;
+            margin-bottom: 8px;
+            padding: 12px 16px;
+            border-radius: 20px;
+        }
+        
+        .exchange-btn {
+            background: #e2a33c;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Toast消息 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000cc;
+            backdrop-filter: blur(12px);
+            padding: 8px 20px;
+            border-radius: 60px;
+            color: #ffdfaa;
+            font-weight: bold;
+            z-index: 999;
+            pointer-events: none;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        /* 重置按钮 */
+        .reset-btn {
+            background: #2d3e3e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: #ffecb3;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        /* 页面标题 */
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 20px 0 16px 0;
+            text-align: center;
+        }
+        
+        /* 任务类型筛选 */
+        .type-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .type-filter-btn {
+            background: #1f2e38;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            color: #e2eaf1;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .type-filter-btn.active {
+            background: #4c7a5c;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,200,100,0.5);
+            border-radius: 3px;
+        }
+        
+        /* 打卡心得输入框 */
+        .reflection-input {
+            width: 100%;
+            background: #1f2e38;
+            border: 1px solid #3a5563;
+            border-radius: 12px;
+            padding: 12px;
+            color: #f0f3f8;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .reflection-input:focus {
+            outline: none;
+            border-color: #f5a623;
+        }
+        
+        /* 保存心得按钮 */
+        .save-reflection-btn {
+            background: #4c7a5c;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        
+        /* 今日任务卡片样式 */
+        .today-task-item {
+            display: flex;
+            align-items: center;
+            background: #1f2e38;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #4cae4c;
+        }
+        
+        .today-task-icon {
+            font-size: 1.2rem;
+            margin-right: 12px;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .today-task-info {
+            flex: 1;
+        }
+        
+        .today-task-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        .today-task-meta {
+            font-size: 0.7rem;
+            display: flex;
+            gap: 8px;
+            opacity: 0.8;
+        }
+        
+        /* 无任务提示 */
+        .no-tasks-msg {
+            text-align: center;
+            padding: 20px;
+            color: #8bcb8c;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <!-- 顶部状态栏 -->
+    <div class="top-status-bar">
+        <div class="status-left">
+            <div class="status-coin">💰 <span id="goldAmount">0</span></div>
+            <div class="status-level">Lv.<span id="levelNum">0</span> <span id="levelTitle">🌱 初心者</span></div>
+        </div>
+        <div id="currentDateDisplay" style="font-size:0.85rem; opacity:0.8;"></div>
+    </div>
+    
+    <!-- 主内容区 - 多个页面 -->
+    <div class="main-content" id="mainContent">
+        <!-- 仪表盘页面 -->
+        <div id="dashboardPage" class="page active">
+            <div class="container">
+                <h2 class="page-title">📊 LIFE OS DASHBOARD</h2>
+                
+                <!-- 经验进度 -->
+                <div class="dashboard-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: bold;">✨ 经验进度</span>
+                        <span id="expDetail" style="font-size:0.8rem;">0 / 100</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="exp-fill" id="expFill" style="background: linear-gradient(90deg,#8bcb8c,#4cae4c);"></div>
+                    </div>
+                </div>
+                
+                <!-- 属性展示 -->
+                <div class="attr-grid">
+                    <div class="attr-card"><div class="attr-name">🧠 思维</div><div class="attr-value" id="attrThink">0</div></div>
+                    <div class="attr-card"><div class="attr-name">✨ 魅力</div><div class="attr-value" id="attrCharm">0</div></div>
+                    <div class="attr-card"><div class="attr-name">💪 体魄</div><div class="attr-value" id="attrPhys">0</div></div>
+                    <div class="attr-card"><div class="attr-name">👁️ 感知</div><div class="attr-value" id="attrSense">0</div></div>
+                    <div class="attr-card"><div class="attr-name">⚡ 灵巧</div><div class="attr-value" id="attrAgility">0</div></div>
+                </div>
+                
+
+                
+                <!-- 今日得分日历 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 12px;">📅 今日得分日历</h3>
+                    <div id="dashboardCalendar"></div>
+                </div>
+                
+                <!-- 今日完成任务 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 12px;">✅ 今日已完成任务</h3>
+                    <div id="todayCompletedTasks"></div>
+                </div>
+  
+                <!-- 主线进度概览 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">🎯 主线进度概览</h3>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span>🏋️ 锻炼身体</span>
+                            <span id="progressFitnessText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div id="progressFitness" class="progress-fill"></div></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span>🌞 积极生活</span>
+                            <span id="progressActiveText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div id="progressActive" class="progress-fill"></div></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span>🧘 提升自己</span>
+                            <span id="progressSelfupText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div id="progressSelfup" class="progress-fill"></div></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span>🏠 养家糊口</span>
+                            <span id="progressFamilyText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div id="progressFamily" class="progress-fill"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span>📚 准备公考</span>
+                            <span id="progressExamText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div id="progressExam" class="progress-fill"></div></div>
+                    </div>
+                </div>
+                
+
+
+
+            </div>
+        </div>
+
+
+        <!-- 任务页面 -->
+        <div id="tasksPage" class="page">
+            <div class="container">
+                <h2 class="page-title">✅ 任务中心</h2>
+                
+                <!-- 任务类型筛选 -->
+                <div class="type-filter">
+                    <button class="type-filter-btn active" data-type="daily">📅 日常任务</button>
+                    <button class="type-filter-btn" data-type="weekly">📆 周常任务</button>
+                    <button class="type-filter-btn" data-type="monthly">🗓️ 月常任务</button>
+                    <button class="type-filter-btn" data-type="all">🔍 所有任务</button>
+                </div>
+               
+                <!-- 主线任务选项卡 -->
+                <div class="mainline-tabs" id="taskMainlineTabs">
+                    <button class="mainline-btn active-main" data-main="all">🏷️ 全部主线</button>
+                    <button class="mainline-btn" data-main="fitness">🏋️ 锻炼身体</button>
+                    <button class="mainline-btn" data-main="active">🌞 积极生活</button>
+                    <button class="mainline-btn" data-main="selfup">🧘 提升自己</button>
+                    <button class="mainline-btn" data-main="family">🏠 养家糊口</button>
+                    <button class="mainline-btn" data-main="exam">📚 准备公考</button>
+                </div>
+
+
+
+
+                
+                <!-- 任务列表容器 -->
+                <div class="task-list" id="tasksListContainer"></div>
+                
+                <!-- 打卡心得区域 -->
+                <div id="reflectionContainer" class="dashboard-section" style="margin-top: 20px;">
+                    <h3 style="margin-top:0; margin-bottom: 12px;">📝 今日打卡心得</h3>
+                    <textarea id="dailyReflection" class="reflection-input" placeholder="记录今日的感悟、收获或反思..."></textarea>
+                    <button id="saveReflectionBtn" class="save-reflection-btn">保存心得</button>
+                </div>
+
+                
+ 
+
+                
+                <!-- 连击记录 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">🔥 连击记录</h3>
+                    <div id="comboStats">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>📅 日常连击</span>
+                            <span id="dailyCombo">0 天</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>📆 周常连击</span>
+                            <span id="weeklyCombo">0 周</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>🏋️ 锻炼身体连击</span>
+                            <span id="fitnessCombo">0 天</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- 成长足迹页面 -->
+        <div id="growthPage" class="page">
+            <div class="container">
+                <h2 class="page-title">🌱 成长足迹与高光时刻</h2>
+
+                <!-- 今日高光列表 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">✨ 今日高光</h3>
+                    <div class="task-list" id="highlightsList"></div>
+                </div>
+               
+                <!-- 升级奖励 -->
+                <div class="dashboard-section" id="levelRewardSection">
+                    <h3 style="margin-top:0; margin-bottom: 12px;">🎯 升级奖励系统</h3>
+                    <div id="levelRewardInfo">
+                        <!-- 这里会动态显示升级奖励信息 -->
+                    </div>
+                </div>
+                <!-- 高分成就 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">🏆 高分成就</h3>
+                    <div class="task-list" id="achievementsList"></div>
+                </div>        
+
+
+
+
+            </div>
+        </div>
+        
+        <!-- 奖励兑换页面 -->
+        <div id="rewardsPage" class="page">
+            <div class="container">
+                <h2 class="page-title">🎁 奖励兑换商店</h2>
+                
+                <!-- 当前金币 -->
+                <div class="dashboard-section" style="text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 8px;">💰 当前金币</div>
+                    <div style="font-size: 2rem; color: #f3b33d; font-weight: bold;" id="storeGoldAmount">0</div>
+                </div>
+                
+                <!-- 奖励列表 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">🎯 可兑换奖励</h3>
+                    <div id="storeContainer"></div>
+                </div>
+                
+                <!-- 兑换历史 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">📋 兑换历史</h3>
+                    <div id="redemptionHistory" style="font-size:0.85rem; opacity:0.8;">
+                        <div>暂无兑换记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计页面 -->
+        <div id="statsPage" class="page">
+            <div class="container">
+                <h2 class="page-title">📊 数据统计</h2>
+                
+                <!-- 月视图日历 -->
+                <div class="dashboard-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <button id="prevMonthBtn" class="reset-btn" style="padding:6px 12px;">◀ 上月</button>
+                        <span id="monthYearDisplay" style="font-weight: bold;">2026年5月</span>
+                        <button id="nextMonthBtn" class="reset-btn" style="padding:6px 12px;">下月 ▶</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                    <div style="font-size:0.75rem; text-align:center; margin-top:12px; opacity:0.8;">
+                        ✨ 点击日期查看当日得分详情
+                    </div>
+                </div>
+                
+                <!-- 统计摘要 -->
+                <div class="dashboard-section">
+                    <h3 style="margin-top:0; margin-bottom: 16px;">📈 统计摘要</h3>
+                    <div id="statsSummary">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>📅 累计活跃天数</span>
+                            <span id="totalActiveDays">0 天</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>✅ 总完成任务数</span>
+                            <span id="totalCompletedTasks">0 个</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>💰 总获得金币</span>
+                            <span id="totalGoldEarned">0 金币</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>✨ 总获得经验</span>
+                            <span id="totalExpEarned">0 经验</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 导出按钮 -->
+                <div class="dashboard-section" style="text-align: center;">
+                    <button id="exportExcelBtn" class="reset-btn" style="width: 100%; padding: 12px; font-size: 1rem;">
+                        📎 导出Excel数据
+                    </button>
+                    <button id="resetDailyBtn" class="reset-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-top: 12px;">
+                        🔄 重置今日日常
+                    </button>
+                </div>
+                
+                <!-- 完全重置按钮 -->
+                <div class="dashboard-section" style="text-align: center; background: rgba(180, 0, 0, 0.2); border: 1px solid rgba(255, 100, 100, 0.3); margin-top: 20px;">
+                    <h3 style="margin-top:0; margin-bottom: 16px; color: #ff6b6b;">⚠️ 危险操作</h3>
+                    <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
+                        此操作将永久删除所有数据，包括金币、经验、任务记录、兑换历史等，无法恢复！
+                    </p>
+                    <button id="completeResetBtn" class="reset-btn" style="background: #b33c3c; width: 100%; padding: 12px; font-size: 1rem; border: 2px solid #ff6b6b;">
+                        💣 完全重置所有数据
+                    </button>
+                    <div style="margin-top: 12px; font-size: 0.75rem; opacity: 0.7;">
+                        长按3秒生效，防止误操作
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" data-page="dashboard">
+            <div class="nav-icon">📊</div>
+            <div class="nav-text">仪表盘</div>
+        </button>
+        <button class="nav-btn" data-page="tasks">
+            <div class="nav-icon">✅</div>
+            <div class="nav-text">任务</div>
+        </button>
+        <button class="nav-btn" data-page="growth">
+            <div class="nav-icon">🌱</div>
+            <div class="nav-text">成长</div>
+        </button>
+        <button class="nav-btn" data-page="rewards">
+            <div class="nav-icon">🎁</div>
+            <div class="nav-text">奖励</div>
+        </button>
+        <button class="nav-btn" data-page="stats">
+            <div class="nav-icon">📊</div>
+            <div class="nav-text">统计</div>
+        </button>
+    </div>
+</div>
+
+<!-- Toast消息 -->
+<div id="toastMsg" class="toast" style="opacity:0;">通知</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    // 系统核心数据状态
+    let gold = 0;
+    let totalExp = 0;
+    let level = 0, currentExp = 0, nextExp = 100;
+    let attributes = { think:0, charm:0, physique:0, perception:0, agility:0 };
+    let dailyCompleted = new Set();
+    let weeklyCompleted = new Set();
+    let monthlyCompleted = new Set();
+    let growthCompleted = new Set();
+    let dailyScoreMap = new Map(); // 记录每日总得分，可撤销
+    
+    // 升级奖励记录
+    let levelUpRewards = []; // 每升一级获得100金币奖励
+    
+    // 主线进度数据
+    const START_DATE = new Date(2026,4,5);
+    const END_DATE = new Date(2026,11,31);
+    let mainAttendance = { fitness: new Map(), active: new Map(), selfup: new Map(), family: new Map(), exam: new Map() };
+    
+    // 兑换历史
+    let redemptionHistory = [];
+    
+    // 任务完成记录（用于导出Excel）
+    let taskCompletionHistory = [];
+    
+    // 打卡心得记录
+    let dailyReflections = new Map();
+    
+    // 连击记录
+    let comboData = {
+        daily: 0,
+        weekly: 0,
+        fitness: 0
+    };
+    
+    // 任务库
+    const allTasks = [];
+    const highlightTasks = [];
+    const achievementTasks = [];
+    
+    // 初始化任务数据
+    function initTaskData() {
+        // 清空所有任务数组
+        allTasks.length = 0;
+        highlightTasks.length = 0;
+        achievementTasks.length = 0;
+        
+        // 日常任务
+        registerTask("sleep_early","11点前睡觉😴","daily","fitness",30,10,{思维:5,魅力:5,体魄:2,感知:5,灵巧:5});
+        registerTask("wake_early","7点前起床🌅","daily","fitness",30,10,{思维:5,魅力:5,体魄:2,感知:5,灵巧:5});
+        registerTask("exercise_pamela","锻炼（帕梅拉/Jo姐）💪","daily","fitness",20,10,{思维:2,魅力:3,体魄:6,感知:2,灵巧:1});
+        registerTask("supplements","每天吃补剂💊","daily","fitness",5,10,{思维:1,魅力:1,体魄:1,感知:2,灵巧:1});
+        registerTask("dog_care","照顾狗子🐶","daily","active",10,10,{思维:0,魅力:2,体魄:2,感知:2,灵巧:2});
+        registerTask("walk_dog","遛狗🦮","daily","active",10,10,{思维:2,魅力:3,体魄:2,感知:2,灵巧:1});
+        registerTask("learn_skill","学习其他技能📑","daily","selfup",5,10,{思维:2,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("journal","写日记📓","daily","selfup",5,10,{思维:2,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("work_shine","认真工作的我闪闪发光🌟","daily","family",5,5,{思维:1,魅力:1,体魄:0,感知:1,灵巧:1});
+        registerTask("verbal_10","言语理解10道题💬","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("verbal_review","言语理解10道题复盘✅💬","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("judge_10","判断推理10道题✍️","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("judge_review","判断推理10道题复盘✅✍️","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("common_10","常识10道题📖","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("common_review","常识10道题复盘✅📖","daily","exam",5,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("math_5","数量关系5道题🧮","daily","exam",20,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("math_review","数量关系5道题复盘✅🧮","daily","exam",20,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("data_15","资料分析15道题📈","daily","exam",20,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("data_review","资料分析15道题复盘✅📈","daily","exam",20,10,{思维:3,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("essay_read","看一篇申论📄","daily","exam",20,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("interview_think","思考一个面试题🙋","daily","exam",20,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        
+        // 周常任务
+        registerTask("heart_return","回归本心🧘","weekly","selfup",10,10,{思维:5,魅力:1,体魄:1,感知:5,灵巧:2});
+        registerTask("weekly_xc","刷1套行测题🖊️","weekly","exam",40,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("weekly_xc_review","刷1套行测题后复盘✅🖊️","weekly","exam",50,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("weekly_sl","刷1套申论📓","weekly","exam",50,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        registerTask("weekly_sl_review","刷1套申论后复盘✅📓","weekly","exam",70,10,{思维:6,魅力:0,体魄:0,感知:2,灵巧:1});
+        
+        // 月常任务
+        registerTask("dog_check","带狗子体检🩻","monthly","active",20,50,{思维:2,魅力:0,体魄:1,感知:2,灵巧:1});
+        registerTask("self_check","自己体检🏥","monthly","active",20,50,{思维:2,魅力:0,体魄:1,感知:2,灵巧:1});
+        registerTask("dog_bath","给狗子洗澡🛀","monthly","active",20,20,{思维:2,魅力:0,体魄:1,感知:2,灵巧:1});
+        
+        // 高光时刻任务
+        registerHighlightTask("highlight_wise","明智决策：抵御诱惑","growth","selfup",20,10,{思维:0,魅力:0,体魄:2,感知:0,灵巧:0});
+        registerHighlightTask("highlight_save","理性消费达人：立省100%","growth","selfup",20,10,{思维:1,魅力:0,体魄:0,感知:0,灵巧:0});
+        registerHighlightTask("highlight_start","启动大师奖：3,2,1启动！","growth","selfup",20,10,{思维:4,魅力:0,体魄:0,感知:1,灵巧:1});
+        registerHighlightTask("highlight_flow","深度专注奖：心流状态来临！","growth","selfup",20,20,{思维:1,魅力:1,体魄:1,感知:1,灵巧:1});
+        
+        // 成就任务
+        registerAchievementTask("growth_subject4","考过科目四🚗","achievement","selfup",2888,1000,{思维:5,魅力:5,体魄:5,感知:5,灵巧:5});
+        registerAchievementTask("growth_exam","参加考试📐","achievement","exam",888,200,{思维:5,魅力:5,体魄:5,感知:5,灵巧:5});
+    }
+    
+    function registerTask(id,name,type,mainTag,goldVal,expVal,attrObj){ 
+        allTasks.push({id,name,type,mainTag,gold:goldVal,exp:expVal,attrs:attrObj}); 
+    }
+    
+    function registerHighlightTask(id,name,type,mainTag,goldVal,expVal,attrObj){ 
+        allTasks.push({id,name,type,mainTag,gold:goldVal,exp:expVal,attrs:attrObj});
+        highlightTasks.push({id,name,type,mainTag,gold:goldVal,exp:expVal,attrs:attrObj});
+    }
+    
+    function registerAchievementTask(id,name,type,mainTag,goldVal,expVal,attrObj){ 
+        allTasks.push({id,name,type,mainTag,gold:goldVal,exp:expVal,attrs:attrObj});
+        achievementTasks.push({id,name,type,mainTag,gold:goldVal,exp:expVal,attrs:attrObj});
+    }
+    
+    // 工具函数
+    function getTodayStr() { return new Date().toISOString().slice(0,10); }
+    
+    function getCurrentTimeStr() {
+        const now = new Date();
+        return now.toLocaleTimeString('zh-CN', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+    
+    function getWeekKey() { 
+        const d = new Date();
+        const year = d.getFullYear();
+        const start = new Date(year,0,1);
+        const days = Math.floor((d - start) / 86400000);
+        return `${year}_W${Math.ceil((days + start.getDay() + 1) / 7)}`;
+    }
+    
+    function getMonthKey() { 
+        const d = new Date();
+        return `${d.getFullYear()}_${d.getMonth()}`;
+    }
+    
+    let lastDaily = getTodayStr(), lastWeek = getWeekKey(), lastMonth = getMonthKey();
+    
+    const titles = ["🌱 初心者","📘 学徒","✨ 探索者","🔥 奋进者","⚡ 精英","💎 大师","👑 传说","🌟 超凡","🏆 圣殿","🚀 永恒"];
+    
+    // 修改后的updateLevel函数，包含升级奖励
+    function updateLevel() { 
+        let expNeeded = 100, lv = 0, temp = totalExp;
+        let newGoldReward = 0; // 记录本次升级获得的额外金币
+        
+        while(temp >= expNeeded && lv < 100){
+            temp -= expNeeded;
+            lv++;
+            
+            // 计算升级奖励（从旧等级到新等级）
+            if(lv > level) { // 如果是新升级
+                newGoldReward += 100; // 每升一级获得100金币
+            }
+            
+            expNeeded = Math.floor(100 + lv * 15);
+        }
+        
+        // 如果升级了，给予金币奖励
+        if(newGoldReward > 0 && lv > level) {
+            const oldLevel = level; // 保存旧等级用于记录
+            
+            // 给予金币奖励
+            gold += newGoldReward;
+            updateGoldDisplay();
+            
+            // 记录升级奖励
+            const todayStr = getTodayStr();
+            const timeStr = getCurrentTimeStr();
+            levelUpRewards.push({
+                date: todayStr,
+                time: timeStr,
+                fromLevel: oldLevel,
+                toLevel: lv,
+                goldReward: newGoldReward
+            });
+            
+            // 显示升级消息
+            showToast(`🎉 恭喜升到 Lv.${lv}！+${newGoldReward}金币奖励！`);
+            
+            // 保存到本地存储
+            saveToLocal();
+        }
+        
+        level = lv;
+        currentExp = temp;
+        nextExp = expNeeded;
+        let idx = Math.min(Math.floor(level / 10), titles.length - 1);
+        document.getElementById("levelNum").innerText = level;
+        document.getElementById("levelTitle").innerText = titles[idx];
+        let percent = (currentExp / nextExp) * 100;
+        document.getElementById("expFill").style.width = percent + "%";
+        document.getElementById("expDetail").innerHTML = `${currentExp} / ${nextExp}`;
+    }
+    
+    function addGold(amount) { 
+        gold += amount; 
+        updateGoldDisplay();
+        showToast(`💰 +${amount}金币`); 
+        updateDailyScore(amount);
+    }
+    
+    function removeGold(amount) { 
+        gold -= amount; 
+        updateGoldDisplay();
+        showToast(`💰 -${amount}金币`); 
+        updateDailyScore(-amount);
+    }
+    
+    function addExp(amount) { 
+        totalExp += amount; 
+        updateLevel(); 
+        showToast(`✨ +${amount}经验`); 
+        updateDailyScore(amount);
+    }
+    
+    function removeExp(amount) { 
+        totalExp -= amount; 
+        updateLevel(); 
+        showToast(`✨ -${amount}经验`); 
+        updateDailyScore(-amount);
+    }
+    
+    function updateGoldDisplay() {
+        document.getElementById("goldAmount").innerText = gold;
+        document.getElementById("storeGoldAmount").innerText = gold;
+    }
+    
+    function addAttributesDelta(delta) { 
+        if(delta.思维) attributes.think += delta.思维;
+        if(delta.魅力) attributes.charm += delta.魅力;
+        if(delta.体魄) attributes.physique += delta.体魄;
+        if(delta.感知) attributes.perception += delta.感知;
+        if(delta.灵巧) attributes.agility += delta.灵巧;
+        updateAttributesDisplay();
+    }
+    
+    function removeAttributesDelta(delta) { 
+        if(delta.思维) attributes.think -= delta.思维;
+        if(delta.魅力) attributes.charm -= delta.魅力;
+        if(delta.体魄) attributes.physique -= delta.体魄;
+        if(delta.感知) attributes.perception -= delta.感知;
+        if(delta.灵巧) attributes.agility -= delta.灵巧;
+        updateAttributesDisplay();
+    }
+    
+    function updateAttributesDisplay() {
+        document.getElementById("attrThink").innerText = attributes.think;
+        document.getElementById("attrCharm").innerText = attributes.charm;
+        document.getElementById("attrPhys").innerText = attributes.physique;
+        document.getElementById("attrSense").innerText = attributes.perception;
+        document.getElementById("attrAgility").innerText = attributes.agility;
+    }
+    
+    function showToast(msg) { 
+        let t = document.getElementById("toastMsg");
+        t.innerText = msg;
+        t.style.opacity = "1";
+        setTimeout(() => t.style.opacity = "0", 1800);
+    }
+    
+    function updateDailyScore(score) { 
+        let today = getTodayStr(); 
+        let old = dailyScoreMap.get(today) || 0; 
+        let newScore = Math.max(0, old + score); // 确保分数不为负数
+        dailyScoreMap.set(today, newScore); 
+        saveToLocal(); 
+        renderDashboardCalendar();
+    }
+    
+    function getTotalDays() { 
+        return Math.ceil((END_DATE - START_DATE) / (1000 * 3600 * 24)) + 1; 
+    }
+    
+    function recordMainAttendance(mainTag, dateStr) { 
+        let m = mainAttendance[mainTag]; 
+        if(!m.get(dateStr)) { 
+            m.set(dateStr, true); 
+            saveToLocal(); 
+            updateAllProgressBars(); 
+        } 
+    }
+    
+    function removeMainAttendance(mainTag, dateStr) { 
+        let m = mainAttendance[mainTag]; 
+        m.delete(dateStr);
+        saveToLocal(); 
+        updateAllProgressBars(); 
+    }
+    
+    function computeProgress(mainTag) { 
+        let totalDays = getTotalDays(); 
+        let attended = 0; 
+        let m = mainAttendance[mainTag]; 
+        for(let i = 0; i < totalDays; i++){ 
+            let d = new Date(START_DATE); 
+            d.setDate(START_DATE.getDate() + i); 
+            let dstr = d.toISOString().slice(0,10); 
+            if(m.get(dstr)) attended++; 
+        } 
+        return totalDays > 0 ? (attended / totalDays) * 100 : 0; 
+    }
+    
+    function updateAllProgressBars() {
+        let fitnessP = computeProgress("fitness"); 
+        document.getElementById("progressFitness").style.width = fitnessP + "%"; 
+        document.getElementById("progressFitnessText").innerText = fitnessP.toFixed(1) + "%";
+        
+        let activeP = computeProgress("active"); 
+        document.getElementById("progressActive").style.width = activeP + "%"; 
+        document.getElementById("progressActiveText").innerText = activeP.toFixed(1) + "%";
+        
+        let selfupP = computeProgress("selfup"); 
+        document.getElementById("progressSelfup").style.width = selfupP + "%"; 
+        document.getElementById("progressSelfupText").innerText = selfupP.toFixed(1) + "%";
+        
+        let familyP = computeProgress("family"); 
+        document.getElementById("progressFamily").style.width = familyP + "%"; 
+        document.getElementById("progressFamilyText").innerText = familyP.toFixed(1) + "%";
+        
+        let examP = computeProgress("exam"); 
+        document.getElementById("progressExam").style.width = examP + "%"; 
+        document.getElementById("progressExamText").innerText = examP.toFixed(1) + "%";
+    }
+    
+    function checkCycleReset() { 
+        let today = getTodayStr(); 
+        if(lastDaily !== today){ 
+            dailyCompleted.clear(); 
+            lastDaily = today; 
+            showToast("🌞 日常已刷新"); 
+        } 
+        let wk = getWeekKey(); 
+        if(lastWeek !== wk){ 
+            weeklyCompleted.clear(); 
+            lastWeek = wk; 
+        } 
+        let mon = getMonthKey(); 
+        if(lastMonth !== mon){ 
+            monthlyCompleted.clear(); 
+            lastMonth = mon; 
+        } 
+        renderCurrentPage();
+    }
+    
+    // 任务完成功能 - 支持可撤销
+    function toggleTaskCompletion(task) {
+        const todayStr = getTodayStr();
+        const timeStr = getCurrentTimeStr();
+        const mainTagName = task.mainTag === "fitness" ? "锻炼身体" :
+                          task.mainTag === "active" ? "积极生活" :
+                          task.mainTag === "selfup" ? "提升自己" :
+                          task.mainTag === "family" ? "养家糊口" : "准备公考";
+        
+        // 获取对应的完成集合
+        let setMap = { daily:dailyCompleted, weekly:weeklyCompleted, monthly:monthlyCompleted, growth:growthCompleted };
+        let set = setMap[task.type];
+        const isCompleted = set.has(task.id);
+        
+        if (isCompleted) {
+            // 撤销任务
+            removeGold(task.gold);
+            removeExp(task.exp);
+            removeAttributesDelta(task.attrs);
+            set.delete(task.id);
+            
+            // 删除任务完成历史记录
+            const recordIndex = taskCompletionHistory.findIndex(r => 
+                r.taskName === task.name && r.date === todayStr && r.gold === task.gold
+            );
+            if (recordIndex !== -1) {
+                taskCompletionHistory.splice(recordIndex, 1);
+            }
+            
+            // 删除主线打卡记录
+            if(todayStr >= START_DATE.toISOString().slice(0,10) && todayStr <= END_DATE.toISOString().slice(0,10)) {
+                removeMainAttendance(task.mainTag, todayStr);
+            }
+            
+            // 更新连击
+            if(task.type === "daily") {
+                comboData.daily = Math.max(0, comboData.daily - 1);
+            }
+            
+            if(task.mainTag === "fitness") {
+                comboData.fitness = Math.max(0, comboData.fitness - 1);
+            }
+            
+            showToast(`❌ 撤销「${task.name}」 -${task.gold}💰 -${task.exp}经验`);
+        } else {
+            // 完成任务
+            addGold(task.gold);
+            addExp(task.exp);
+            addAttributesDelta(task.attrs);
+            set.add(task.id);
+            
+            // 记录任务完成历史
+            taskCompletionHistory.push({
+                date: todayStr,
+                time: timeStr,
+                taskName: task.name,
+                mainTask: mainTagName,
+                reflection: dailyReflections.get(todayStr) || "",
+                thinking: task.attrs.思维 || 0,
+                charm: task.attrs.魅力 || 0,
+                physique: task.attrs.体魄 || 0,
+                perception: task.attrs.感知 || 0,
+                agility: task.attrs.灵巧 || 0,
+                gold: task.gold,
+                exp: task.exp
+            });
+            
+            // 记录主线打卡
+            if(todayStr >= START_DATE.toISOString().slice(0,10) && todayStr <= END_DATE.toISOString().slice(0,10)) {
+                recordMainAttendance(task.mainTag, todayStr);
+            }
+            
+            // 更新连击
+            if(task.type === "daily") {
+                comboData.daily++;
+            }
+            
+            if(task.mainTag === "fitness") {
+                comboData.fitness++;
+            }
+            
+            showToast(`✅ 完成「${task.name}」 +${task.gold}💰 +${task.exp}经验`);
+        }
+        
+        saveToLocal();
+        renderCurrentPage();
+        return true;
+    }
+    
+    function updateComboDisplay() {
+        document.getElementById("dailyCombo").innerText = comboData.daily + " 天";
+        document.getElementById("fitnessCombo").innerText = comboData.fitness + " 天";
+    }
+    
+    // 页面切换功能
+    function switchPage(pageId) {
+        // 更新导航按钮状态
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.nav-btn[data-page="${pageId}"]`).classList.add('active');
+        
+        // 切换页面内容
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        document.getElementById(pageId + 'Page').classList.add('active');
+        
+        // 渲染当前页面
+        renderCurrentPage();
+        
+        // 更新URL
+        history.pushState(null, '', `#${pageId}`);
+    }
+    
+    function renderCurrentPage() {
+        const currentPage = document.querySelector('.page.active');
+        if(!currentPage) return;
+        
+        const pageId = currentPage.id.replace('Page', '');
+        
+        switch(pageId) {
+            case 'dashboard':
+                renderDashboard();
+                break;
+            case 'tasks':
+                renderTasksPage();
+                break;
+            case 'growth':
+                renderGrowthPage();
+                break;
+            case 'rewards':
+                renderRewardsPage();
+                break;
+            case 'stats':
+                renderStatsPage();
+                break;
+        }
+    }
+    
+    // 仪表盘页面渲染
+    function renderDashboard() {
+        updateGoldDisplay();
+        updateLevel();
+        updateAttributesDisplay();
+        updateAllProgressBars();
+        updateComboDisplay();
+        
+        // 更新当前日期
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+        document.getElementById("currentDateDisplay").innerText = dateStr;
+        
+        // 渲染今日日历
+        renderDashboardCalendar();
+        
+        // 渲染今日完成任务
+        renderTodayCompletedTasks();
+        
+        // 更新统计摘要
+        updateStatsSummary();
+        
+        // 渲染升级奖励信息
+        renderLevelRewardInfo();
+    }
+    
+    // 渲染升级奖励信息
+    function renderLevelRewardInfo() {
+        const container = document.getElementById("levelRewardInfo");
+        if(!container) return;
+        
+        const recentRewards = levelUpRewards.slice(-3).reverse(); // 显示最近3次升级记录
+        
+        container.innerHTML = `
+            <div style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>当前等级:</span>
+                    <span style="font-weight: bold; color: #f5a623;">Lv.${level}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>下一等级:</span>
+                    <span style="font-weight: bold; color: #4cae4c;">Lv.${level + 1} 需要 ${nextExp}经验</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>升级奖励:</span>
+                    <span style="font-weight: bold; color: #f3b33d;">每级 +100金币</span>
+                </div>
+            </div>
+            <div style="background: rgba(255, 200, 100, 0.1); padding: 12px; border-radius: 12px; border-left: 4px solid #f5a623;">
+                <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 4px;">近期升级记录</div>
+                <div id="rewardHistoryList" style="font-size: 0.8rem;">
+                    ${recentRewards.length > 0 ? 
+                        recentRewards.map(reward => 
+                            `<div style="margin-bottom: 4px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                Lv.${reward.fromLevel} → Lv.${reward.toLevel}
+                                <span style="color: #f3b33d; float: right;">+${reward.goldReward}金币</span><br>
+                                <span style="opacity:0.7; font-size:0.7rem;">${reward.date}</span>
+                            </div>`
+                        ).join('') : 
+                        '<div style="opacity:0.6; text-align:center; padding: 8px;">暂无升级记录</div>'
+                    }
+                </div>
+            </div>
+        `;
+    }
+    
+    function renderDashboardCalendar() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+        
+        const container = document.getElementById("dashboardCalendar");
+        if(!container) return;
+        
+        // 只显示今天的数据
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const score = dailyScoreMap.get(dateStr) || 0;
+        
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 2rem; font-weight: bold; color: #f5a623;">${day}</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">${month+1}月 ${year}</div>
+                <div style="margin-top: 12px; font-size: 1.2rem; font-weight: bold;">
+                    今日得分: <span style="color: #8bcb8c;">${score}</span>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.85rem; opacity: 0.8;">
+                    ${score > 0 ? "🎉 今天表现不错！" : "💪 开始今天的挑战吧！"}
+                </div>
+            </div>
+        `;
+    }
+    
+    // 渲染今日已完成任务
+    function renderTodayCompletedTasks() {
+        const container = document.getElementById("todayCompletedTasks");
+        if(!container) return;
+        
+        const today = getTodayStr();
+        
+        // 获取今天完成的所有任务
+        const todayTasks = allTasks.filter(task => {
+            const completedSet = task.type === 'daily' ? dailyCompleted : 
+                               task.type === 'weekly' ? weeklyCompleted : 
+                               task.type === 'monthly' ? monthlyCompleted : growthCompleted;
+            return completedSet.has(task.id);
+        });
+        
+        if(todayTasks.length === 0) {
+            container.innerHTML = `
+                <div class="no-tasks-msg">
+                    <div style="font-size: 3rem; margin-bottom: 12px;">📋</div>
+                    <div>今日还没有完成任务</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px; opacity: 0.7;">快去任务中心领取任务吧！</div>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        // 按主线分类任务
+        const tasksByMain = {
+            fitness: [],
+            active: [],
+            selfup: [],
+            family: [],
+            exam: []
+        };
+        
+        todayTasks.forEach(task => {
+            if(tasksByMain[task.mainTag]) {
+                tasksByMain[task.mainTag].push(task);
+            }
+        });
+        
+        // 为每个主线任务创建显示
+        Object.entries(tasksByMain).forEach(([mainTag, tasks]) => {
+            if(tasks.length > 0) {
+                const mainTagName = mainTag === "fitness" ? "锻炼身体" :
+                                  mainTag === "active" ? "积极生活" :
+                                  mainTag === "selfup" ? "提升自己" :
+                                  mainTag === "family" ? "养家糊口" : "准备公考";
+                
+                html += `<div style="margin-bottom: 16px;">`;
+                html += `<div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 8px; color: #f5a623;">${mainTagName} (${tasks.length}个)</div>`;
+                
+                tasks.forEach(task => {
+                    const mainIcon = mainTag === "fitness" ? "🏋️" :
+                                   mainTag === "active" ? "🌞" :
+                                   mainTag === "selfup" ? "🧘" :
+                                   mainTag === "family" ? "🏠" : "📚";
+                    
+                    const taskTypeIcon = task.type === 'daily' ? '📅' :
+                                       task.type === 'weekly' ? '📆' :
+                                       task.type === 'monthly' ? '🗓️' : '🌟';
+                    
+                    html += `
+                        <div class="today-task-item">
+                            <div class="today-task-icon">${mainIcon}</div>
+                            <div class="today-task-info">
+                                <div class="today-task-name">${task.name}</div>
+                                <div class="today-task-meta">
+                                    <span>${taskTypeIcon}</span>
+                                    <span>💰 ${task.gold}</span>
+                                    <span>✨ ${task.exp}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
+        });
+        
+        // 添加今日总结
+        const totalTasks = todayTasks.length;
+        const totalGold = todayTasks.reduce((sum, task) => sum + task.gold, 0);
+        const totalExp = todayTasks.reduce((sum, task) => sum + task.exp, 0);
+        const todayScore = dailyScoreMap.get(getTodayStr()) || 0;
+        
+        html += `
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                    <span>今日完成:</span>
+                    <span style="font-weight: bold; color: #8bcb8c;">${totalTasks} 个任务</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 4px;">
+                    <span>获得金币:</span>
+                    <span style="font-weight: bold; color: #f3b33d;">${totalGold} 金币</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 4px;">
+                    <span>获得经验:</span>
+                    <span style="font-weight: bold; color: #4cae4c;">${totalExp} 经验</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 4px;">
+                    <span>今日总得分:</span>
+                    <span style="font-weight: bold; color: #8bcb8c;">${todayScore} 分</span>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    // 任务页面渲染
+    function renderTasksPage() {
+        const typeFilter = document.querySelector('.type-filter-btn.active')?.dataset.type || 'daily';
+        const mainFilter = document.querySelector('.mainline-btn.active-main')?.dataset.main || 'all';
+        
+        let filteredTasks = allTasks.filter(task => {
+            // 类型筛选
+            if(typeFilter !== 'all' && task.type !== typeFilter) return false;
+            
+            // 主线筛选
+            if(mainFilter !== 'all' && task.mainTag !== mainFilter) return false;
+            
+            return true;
+        });
+        
+        renderTaskList(filteredTasks, 'tasksListContainer');
+        
+        // 加载今日打卡心得
+        const today = getTodayStr();
+        const todayReflection = dailyReflections.get(today) || "";
+        document.getElementById("dailyReflection").value = todayReflection;
+    }
+    
+    function renderTaskList(tasks, containerId) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        
+        container.innerHTML = '';
+        
+        if(tasks.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; opacity: 0.6;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">📋</div>
+                    <div>暂无任务</div>
+                </div>
+            `;
+            return;
+        }
+        
+        tasks.forEach(task => {
+            const completedSet = task.type === 'daily' ? dailyCompleted : 
+                                task.type === 'weekly' ? weeklyCompleted : 
+                                task.type === 'monthly' ? monthlyCompleted : growthCompleted;
+            const completed = completedSet.has(task.id);
+            
+            const mainTagName = task.mainTag === "fitness" ? "锻炼身体" :
+                              task.mainTag === "active" ? "积极生活" :
+                              task.mainTag === "selfup" ? "提升自己" :
+                              task.mainTag === "family" ? "养家糊口" : "准备公考";
+            
+            const typeIcon = task.type === 'daily' ? '📅' :
+                           task.type === 'weekly' ? '📆' :
+                           task.type === 'monthly' ? '🗓️' : '🌟';
+            
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.innerHTML = `
+                <div class="task-info">
+                    <div class="task-name">${task.name} <span style="font-size:0.7rem; background:#3f6792; padding:2px 8px; border-radius:20px;">#${mainTagName}</span></div>
+                    <div class="task-meta">
+                        <span>${typeIcon} ${task.type}</span>
+                        <span>💰 ${task.gold}</span>
+                        <span>✨ ${task.exp}</span>
+                    </div>
+                    <div class="reward-tags">
+                        ${task.attrs.思维 > 0 ? `<span>🧠 +${task.attrs.思维}</span>` : ''}
+                        ${task.attrs.魅力 > 0 ? `<span>✨ +${task.attrs.魅力}</span>` : ''}
+                        ${task.attrs.体魄 > 0 ? `<span>💪 +${task.attrs.体魄}</span>` : ''}
+                        ${task.attrs.感知 > 0 ? `<span>👁️ +${task.attrs.感知}</span>` : ''}
+                        ${task.attrs.灵巧 > 0 ? `<span>⚡ +${task.attrs.灵巧}</span>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            const btn = document.createElement('button');
+            btn.className = completed ? 'complete-btn completed' : 'complete-btn';
+            btn.innerText = completed ? '已领取 ✓' : '领取奖励';
+            btn.onclick = () => toggleTaskCompletion(task);
+            
+            card.appendChild(btn);
+            container.appendChild(card);
+        });
+    }
+    
+    // 保存打卡心得
+    function saveDailyReflection() {
+        const reflectionText = document.getElementById("dailyReflection").value;
+        const today = getTodayStr();
+        dailyReflections.set(today, reflectionText);
+        saveToLocal();
+        showToast("💾 打卡心得已保存");
+    }
+    
+    // 成长页面渲染
+    function renderGrowthPage() {
+        renderHighlightList();
+        renderAchievementsList();
+        updateComboDisplay();
+    }
+    
+    function renderHighlightList() {
+        const container = document.getElementById("highlightsList");
+        if(!container) return;
+        
+        container.innerHTML = '';
+        
+        highlightTasks.forEach(task => {
+            const completed = growthCompleted.has(task.id);
+            
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.style.borderLeft = '6px solid #f5a623';
+            card.innerHTML = `
+                <div class="task-info">
+                    <div class="task-name">✨ ${task.name}</div>
+                    <div class="task-meta">
+                        <span>高光时刻</span>
+                        <span>💰 ${task.gold}</span>
+                        <span>✨ ${task.exp}</span>
+                    </div>
+                    <div style="font-size:0.8rem; opacity:0.8; margin-top:6px;">
+                        完成特殊成就获得额外奖励
+                    </div>
+                </div>
+            `;
+            
+            const btn = document.createElement('button');
+            btn.className = completed ? 'complete-btn completed' : 'complete-btn';
+            btn.innerText = completed ? '已领取 ✓' : '领取';
+            btn.onclick = () => toggleTaskCompletion(task);
+            
+            card.appendChild(btn);
+            container.appendChild(card);
+        });
+    }
+    
+    function renderAchievementsList() {
+        const container = document.getElementById("achievementsList");
+        if(!container) return;
+        
+        container.innerHTML = '';
+        
+        achievementTasks.forEach(task => {
+            const completed = growthCompleted.has(task.id);
+            
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.style.borderLeft = '6px solid #4cae4c';
+            card.innerHTML = `
+                <div class="task-info">
+                    <div class="task-name">🏆 ${task.name}</div>
+                    <div class="task-meta">
+                        <span>重大成就</span>
+                        <span>💰 ${task.gold}</span>
+                        <span>✨ ${task.exp}</span>
+                    </div>
+                    <div class="reward-tags">
+                        <span>🎯 里程碑奖励</span>
+                    </div>
+                </div>
+            `;
+            
+            const btn = document.createElement('button');
+            btn.className = completed ? 'complete-btn completed' : 'complete-btn';
+            btn.innerText = completed ? '已达成 ✓' : '领取';
+            btn.onclick = () => toggleTaskCompletion(task);
+            
+            card.appendChild(btn);
+            container.appendChild(card);
+        });
+    }
+// 奖励页面渲染
+    function renderRewardsPage() {
+        renderStore();
+        renderRedemptionHistory();
+    }
+    
+    // 更新后的奖励商品列表
+    const storeItems = [
+        {id:"r1",name:"15分钟小红书",cost:200},
+        {id:"r2",name:"库迪",cost:300},
+        {id:"r3",name:"快乐番薯",cost:300},
+        {id:"r4",name:"古茗",cost:300},
+        {id:"r5",name:"蜜雪冰城",cost:300},
+        {id:"r6",name:"买喜姐烧烤",cost:300},
+        {id:"r7",name:"冰淇淋",cost:300},
+        {id:"r8",name:"蛋仔饼",cost:300},
+        {id:"r9",name:"1次外卖",cost:300},
+        {id:"r10",name:"给游戏充钱",cost:500},
+        {id:"r11",name:"全天小红书不限时",cost:1000},
+        {id:"r12",name:"1次外出吃饭的机会",cost:1000}
+    ];
+    
+    function renderStore() {
+        const container = document.getElementById("storeContainer");
+        if(!container) return;
+        
+        container.innerHTML = '';
+        
+        storeItems.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'reward-item';
+            row.innerHTML = `
+                <div>
+                    <div style="font-weight: bold;">${item.name}</div>
+                    <div style="font-size:0.8rem; opacity:0.8;">消耗金币: ${item.cost}</div>
+                </div>
+            `;
+            
+            const btn = document.createElement('button');
+            btn.className = 'exchange-btn';
+            btn.innerText = gold >= item.cost ? '兑换' : '金币不足';
+            if(gold < item.cost) {
+                btn.disabled = true;
+            } else {
+                btn.onclick = () => redeemItem(item);
+            }
+            
+            row.appendChild(btn);
+            container.appendChild(row);
+        });
+    }
+    
+    function redeemItem(item) {
+        if(gold >= item.cost) {
+            gold -= item.cost;
+            updateGoldDisplay();
+            
+            // 记录兑换历史
+            redemptionHistory.push({
+                item: item.name,
+                cost: item.cost,
+                date: getTodayStr(),
+                time: getCurrentTimeStr()
+            });
+            
+            showToast(`🎁 兑换成功: ${item.name}`);
+            saveToLocal();
+            renderRedemptionHistory();
+            renderStore();
+        } else {
+            showToast("金币不足");
+        }
+    }
+    
+    function renderRedemptionHistory() {
+        const container = document.getElementById("redemptionHistory");
+        if(!container) return;
+        
+        if(redemptionHistory.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">暂无兑换记录</div>';
+            return;
+        }
+        
+        let html = '<div style="max-height: 200px; overflow-y: auto;">';
+        redemptionHistory.slice().reverse().forEach((record, index) => {
+            if(index < 10) { // 只显示最近10条
+                html += `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div>
+                            <div>${record.item}</div>
+                            <div style="font-size:0.7rem; opacity:0.6;">${record.date} ${record.time}</div>
+                        </div>
+                        <div style="color: #f3b33d; font-weight: bold;">-${record.cost}💰</div>
+                    </div>
+                `;
+            }
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    }
+    
+    // 统计页面渲染
+    function renderStatsPage() {
+        updateStatsSummary();
+        renderCalendar();
+    }
+    
+    function updateStatsSummary() {
+        const totalActiveDays = dailyScoreMap.size;
+        const totalCompletedTasks = dailyCompleted.size + weeklyCompleted.size + monthlyCompleted.size + growthCompleted.size;
+        
+        // 计算总金币和经验
+        let totalGoldEarned = gold;
+        let totalExpEarned = totalExp;
+        
+        document.getElementById("totalActiveDays").innerText = totalActiveDays + " 天";
+        document.getElementById("totalCompletedTasks").innerText = totalCompletedTasks + " 个";
+        document.getElementById("totalGoldEarned").innerText = totalGoldEarned + " 金币";
+        document.getElementById("totalExpEarned").innerText = totalExpEarned + " 经验";
+    }
+    
+    // 日历功能
+    let currentCalendarYear = 2026, currentCalendarMonth = 4;
+    
+    function renderCalendar() {
+        let year = currentCalendarYear, month = currentCalendarMonth;
+        let firstDay = new Date(year, month, 1);
+        let startWeekday = firstDay.getDay();
+        let daysInMonth = new Date(year, month + 1, 0).getDate();
+        let grid = document.getElementById("calendarGrid");
+        
+        if(!grid) return;
+        
+        grid.innerHTML = "";
+        let weekdays = ["日","一","二","三","四","五","六"];
+        weekdays.forEach(w => { 
+            let d = document.createElement("div"); 
+            d.style.fontSize = "0.8rem"; 
+            d.style.opacity = "0.7";
+            d.innerText = w; 
+            grid.appendChild(d); 
+        });
+        
+        for(let i = 0; i < startWeekday; i++){ 
+            let empty = document.createElement("div"); 
+            grid.appendChild(empty); 
+        }
+        
+        for(let d = 1; d <= daysInMonth; d++){
+            let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            let score = dailyScoreMap.get(dateStr) || 0;
+            let cell = document.createElement("div"); 
+            cell.className = "cal-day";
+            if(score > 0) cell.classList.add("has-score");
+            let todayStr = getTodayStr();
+            if(dateStr === todayStr) cell.classList.add("today");
+            cell.innerHTML = `<div style="font-weight:bold;">${d}</div>${score>0?`<div style="font-size:0.7rem; margin-top:4px;">${score}</div>`:''}`;
+            cell.onclick = () => showToast(`${dateStr} 获得总分: ${score}`);
+            grid.appendChild(cell);
+        }
+        document.getElementById("monthYearDisplay").innerText = `${year}年${month+1}月`;
+    }
+    
+    function prevMonth(){ 
+        if(currentCalendarYear === 2026 && currentCalendarMonth === 4) return; 
+        if(currentCalendarMonth === 0){ 
+            currentCalendarYear--; 
+            currentCalendarMonth = 11; 
+        } else { 
+            currentCalendarMonth--; 
+        } 
+        renderCalendar(); 
+    }
+    
+    function nextMonth(){ 
+        if(currentCalendarYear === 2026 && currentCalendarMonth === 11) return; 
+        if(currentCalendarMonth === 11){ 
+            currentCalendarYear++; 
+            currentCalendarMonth = 0; 
+        } else { 
+            currentCalendarMonth++; 
+        } 
+        renderCalendar(); 
+    }
+    
+    // 数据导出功能
+    function exportToExcel() {
+        // 创建新的工作簿
+        let wb = XLSX.utils.book_new();
+        
+        // ====== 表格1: 每日统计摘要 ======
+        let summaryData = [["日期","当日得分(金币+经验)","累计金币","累计经验","等级","思维","魅力","体魄","感知","灵巧"]];
+        
+        // 获取所有日期并按日期排序
+        let allDates = [...dailyScoreMap.keys()].sort();
+        let cumulativeGold = 0;
+        let cumulativeExp = 0;
+        let cumulativeAttributes = { think:0, charm:0, physique:0, perception:0, agility:0 };
+        
+        // 计算每个日期的累计值
+        for(let date of allDates){
+            // 当日得分
+            const dayScore = dailyScoreMap.get(date) || 0;
+            
+            // 获取当日的属性值（从完成的任务中计算）
+            let dayThink = 0, dayCharm = 0, dayPhysique = 0, dayPerception = 0, dayAgility = 0;
+            
+            // 获取当日完成的任务
+            const dayTasks = taskCompletionHistory.filter(r => r.date === date);
+            dayTasks.forEach(task => {
+                cumulativeGold += task.gold;
+                cumulativeExp += task.exp;
+                cumulativeAttributes.think += task.thinking;
+                cumulativeAttributes.charm += task.charm;
+                cumulativeAttributes.physique += task.physique;
+                cumulativeAttributes.perception += task.perception;
+                cumulativeAttributes.agility += task.agility;
+                
+                // 当日属性
+                dayThink += task.thinking;
+                dayCharm += task.charm;
+                dayPhysique += task.physique;
+                dayPerception += task.perception;
+                dayAgility += task.agility;
+            });
+            
+            // 计算当日等级
+            let tempLevel = 0;
+            let tempExp = cumulativeExp;
+            let tempExpNeeded = 100;
+            while(tempExp >= tempExpNeeded && tempLevel < 100){
+                tempExp -= tempExpNeeded;
+                tempLevel++;
+                tempExpNeeded = Math.floor(100 + tempLevel * 15);
+            }
+            
+            // 添加行数据
+            summaryData.push([
+                date,
+                dayScore,
+                cumulativeGold,
+                cumulativeExp,
+                tempLevel,
+                cumulativeAttributes.think,
+                cumulativeAttributes.charm,
+                cumulativeAttributes.physique,
+                cumulativeAttributes.perception,
+                cumulativeAttributes.agility
+            ]);
+        }
+        
+        // 如果没有数据，添加一行示例
+        if(allDates.length === 0){
+            summaryData.push([
+                getTodayStr(),
+                0,
+                0,
+                0,
+                0,
+                0,0,0,0,0
+            ]);
+        }
+        
+        // 创建第一个工作表
+        let ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, ws1, "每日统计摘要");
+        
+        // ====== 表格2: 任务完成详情 ======
+        let taskData = [["完成日期","完成时间","任务名称","主线任务","打卡心得","金币","经验","思维","魅力","体魄","感知","灵巧"]];
+        
+        if(taskCompletionHistory.length > 0){
+            // 按日期和时间排序
+            const sortedTasks = [...taskCompletionHistory].sort((a, b) => {
+                if(a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+            
+            sortedTasks.forEach(task => {
+                taskData.push([
+                    task.date,
+                    task.time,
+                    task.taskName,
+                    task.mainTask,
+                    task.reflection,
+                    task.gold,
+                    task.exp,
+                    task.thinking,
+                    task.charm,
+                    task.physique,
+                    task.perception,
+                    task.agility
+                ]);
+            });
+        } else {
+            // 如果没有任务记录，添加一行示例
+            taskData.push([
+                getTodayStr(),
+                getCurrentTimeStr(),
+                "示例任务: 11点前睡觉😴",
+                "锻炼身体",
+                "今日完成了早睡目标，感觉精神好多了！",
+                30,
+                10,
+                5,5,2,5,5
+            ]);
+        }
+        
+        // 创建第二个工作表
+        let ws2 = XLSX.utils.aoa_to_sheet(taskData);
+        XLSX.utils.book_append_sheet(wb, ws2, "任务完成详情");
+        
+        // ====== 表格3: 兑换记录 ======
+        if(redemptionHistory.length > 0){
+            let redemptionData = [["兑换日期","兑换时间","商品名称","价格（金币）"]];
+            
+            // 按日期和时间排序
+            const sortedRedemptions = [...redemptionHistory].sort((a, b) => {
+                if(a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+            
+            sortedRedemptions.forEach(record => {
+                redemptionData.push([
+                    record.date,
+                    record.time,
+                    record.item,
+                    record.cost
+                ]);
+            });
+            
+            let ws3 = XLSX.utils.aoa_to_sheet(redemptionData);
+            XLSX.utils.book_append_sheet(wb, ws3, "兑换记录");
+        }
+        
+        // ====== 表格4: 升级奖励记录 ======
+        if(levelUpRewards.length > 0){
+            let rewardData = [["升级日期","升级时间","从等级","到等级","金币奖励"]];
+            
+            levelUpRewards.forEach(reward => {
+                rewardData.push([
+                    reward.date,
+                    reward.time,
+                    reward.fromLevel,
+                    reward.toLevel,
+                    reward.goldReward
+                ]);
+            });
+            
+            let ws4 = XLSX.utils.aoa_to_sheet(rewardData);
+            XLSX.utils.book_append_sheet(wb, ws4, "升级奖励记录");
+        }
+        
+        // ====== 表格5: 当前统计摘要 ======
+        let currentStatsData = [
+            ["统计项", "数值"],
+            ["当前金币", gold],
+            ["当前经验", totalExp],
+            ["当前等级", level],
+            ["当前属性统计"],
+            ["思维", attributes.think],
+            ["魅力", attributes.charm],
+            ["体魄", attributes.physique],
+            ["感知", attributes.perception],
+            ["灵巧", attributes.agility],
+            ["",""],
+            ["进度统计"],
+            ["累计活跃天数", dailyScoreMap.size],
+            ["累计完成任务数", taskCompletionHistory.length],
+            ["累计兑换次数", redemptionHistory.length],
+            ["累计升级次数", levelUpRewards.length],
+            ["连击记录"],
+            ["日常连击", comboData.daily + " 天"],
+            ["锻炼身体连击", comboData.fitness + " 天"],
+            ["",""],
+            ["系统信息"],
+            ["最后更新", new Date().toLocaleString()],
+            ["数据范围", `${START_DATE.toLocaleDateString('zh-CN')} - ${END_DATE.toLocaleDateString('zh-CN')}`]
+        ];
+        
+        let ws5 = XLSX.utils.aoa_to_sheet(currentStatsData);
+        XLSX.utils.book_append_sheet(wb, ws5, "系统统计");
+        
+        // 导出文件
+        const today = getTodayStr();
+        XLSX.writeFile(wb, `LIFE_OS_个人激励系统_数据导出_${today}.xlsx`);
+        showToast("📊 Excel导出成功，包含5个表格");
+    }
+    
+    // 重置今日日常
+    function manualResetDaily() { 
+        dailyCompleted.clear(); 
+        lastDaily = getTodayStr(); 
+        saveToLocal(); 
+        showToast("✅ 日常已重置"); 
+        renderCurrentPage();
+    }
+    
+    // 完全重置所有数据
+    function resetAllData() {
+        if(confirm("⚠️ 确定要重置所有数据吗？这将清空所有金币、经验、任务完成记录和兑换历史！")) {
+            // 重置所有数据
+            gold = 0;
+            totalExp = 0;
+            level = 0;
+            currentExp = 0;
+            nextExp = 100;
+            
+            attributes = { think:0, charm:0, physique:0, perception:0, agility:0 };
+            dailyCompleted = new Set();
+            weeklyCompleted = new Set();
+            monthlyCompleted = new Set();
+            growthCompleted = new Set();
+            dailyScoreMap = new Map();
+            redemptionHistory = [];
+            taskCompletionHistory = [];
+            dailyReflections = new Map();
+            comboData = { daily:0, weekly:0, fitness:0 };
+            levelUpRewards = []; // 重置升级奖励记录
+            
+            // 重置主线进度
+            mainAttendance = { 
+                fitness: new Map(), 
+                active: new Map(), 
+                selfup: new Map(), 
+                family: new Map(), 
+                exam: new Map() 
+            };
+            
+            // 重置最后更新时间
+            lastDaily = getTodayStr();
+            lastWeek = getWeekKey();
+            lastMonth = getMonthKey();
+            
+            // 清除localStorage
+            localStorage.removeItem("motivation_system");
+            
+            // 更新界面
+            updateGoldDisplay();
+            updateLevel();
+            updateAttributesDisplay();
+            updateAllProgressBars();
+            renderDashboardCalendar();
+            renderTodayCompletedTasks();
+            updateStatsSummary();
+            renderStore();
+            renderRedemptionHistory();
+            
+            showToast("🔄 所有数据已重置");
+        }
+    }
+    
+    // 本地存储
+    function saveToLocal() {
+        let save = { 
+            gold, 
+            totalExp, 
+            attributes, 
+            dailyCompleted: [...dailyCompleted], 
+            weeklyCompleted: [...weeklyCompleted], 
+            monthlyCompleted: [...monthlyCompleted], 
+            growthCompleted: [...growthCompleted], 
+            dailyScoreMap: Object.fromEntries(dailyScoreMap), 
+            mainAttendance: {},
+            redemptionHistory,
+            taskCompletionHistory,
+            dailyReflections: Object.fromEntries(dailyReflections),
+            comboData,
+            levelUpRewards, // 保存升级奖励记录
+            lastDaily,
+            lastWeek,
+            lastMonth
+        };
+        
+        for(let k of ["fitness","active","selfup","family","exam"]) {
+            save.mainAttendance[k] = Object.fromEntries(mainAttendance[k]);
+        }
+        
+        localStorage.setItem("motivation_system", JSON.stringify(save));
+    }
+    
+    function loadFromLocal() {
+        let raw = localStorage.getItem("motivation_system");
+        if(!raw) return;
+        
+        try {
+            let d = JSON.parse(raw);
+            gold = d.gold || 0; 
+            totalExp = d.totalExp || 0; 
+            attributes = d.attributes || { think:0, charm:0, physique:0, perception:0, agility:0 };
+            dailyCompleted = new Set(d.dailyCompleted || []); 
+            weeklyCompleted = new Set(d.weeklyCompleted || []); 
+            monthlyCompleted = new Set(d.monthlyCompleted || []); 
+            growthCompleted = new Set(d.growthCompleted || []);
+            dailyScoreMap = new Map(Object.entries(d.dailyScoreMap || {}));
+            redemptionHistory = d.redemptionHistory || [];
+            taskCompletionHistory = d.taskCompletionHistory || [];
+            dailyReflections = new Map(Object.entries(d.dailyReflections || {}));
+            comboData = d.comboData || { daily: 0, weekly: 0, fitness: 0 };
+            levelUpRewards = d.levelUpRewards || []; // 加载升级奖励记录
+            lastDaily = d.lastDaily || getTodayStr();
+            lastWeek = d.lastWeek || getWeekKey();
+            lastMonth = d.lastMonth || getMonthKey();
+            
+            for(let k of ["fitness","active","selfup","family","exam"]) {
+                mainAttendance[k] = new Map(Object.entries(d.mainAttendance?.[k] || {}));
+            }
+            
+            updateLevel(); 
+            updateAttributesDisplay();
+            updateGoldDisplay();
+            updateAllProgressBars();
+        } catch(e) {
+            console.error("加载数据失败:", e);
+        }
+    }
+    
+    // 长按完全重置功能
+    function setupLongPressReset(button) {
+        let pressTimer;
+        
+        // 鼠标事件
+        button.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            const originalText = button.textContent;
+            let seconds = 3;
+            
+            // 开始计时
+            pressTimer = setInterval(() => {
+                button.textContent = `💣 重置中... ${seconds}秒`;
+                seconds--;
+                
+                if (seconds < 0) {
+                    clearInterval(pressTimer);
+                    button.textContent = originalText;
+                    resetAllData();
+                }
+            }, 1000);
+        });
+        
+        button.addEventListener('mouseup', function() {
+            clearInterval(pressTimer);
+            button.textContent = "💣 完全重置所有数据";
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            clearInterval(pressTimer);
+            button.textContent = "💣 完全重置所有数据";
+        });
+        
+        // 触摸事件
+        button.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const originalText = button.textContent;
+            let seconds = 3;
+            
+            pressTimer = setInterval(() => {
+                button.textContent = `💣 重置中... ${seconds}秒`;
+                seconds--;
+                
+                if (seconds < 0) {
+                    clearInterval(pressTimer);
+                    button.textContent = originalText;
+                    resetAllData();
+                }
+            }, 1000);
+        });
+        
+        button.addEventListener('touchend', function() {
+            clearInterval(pressTimer);
+            button.textContent = "💣 完全重置所有数据";
+        });
+    }
+    
+    // 初始化
+    function init() {
+        // 初始化任务数据
+        initTaskData();
+        
+        // 加载本地数据
+        loadFromLocal();
+        
+        // 更新界面
+        renderDashboard();
+        
+        // 设置事件监听器
+        setupEventListeners();
+        
+        // 设置周期检查
+        setInterval(checkCycleReset, 60000);
+        
+        // 处理URL哈希
+        const hash = window.location.hash.substring(1);
+        if(hash && document.getElementById(hash + 'Page')) {
+            switchPage(hash);
+        }
+    }
+    
+    function setupEventListeners() {
+        // 底部导航
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = btn.dataset.page;
+                switchPage(page);
+            });
+        });
+        
+        // 任务页面筛选
+        document.querySelectorAll('.type-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.type-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderTasksPage();
+            });
+        });
+        
+        // 主线筛选
+        const mainlineBtns = document.querySelectorAll('#taskMainlineTabs .mainline-btn');
+        if(mainlineBtns.length > 0) {
+            mainlineBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#taskMainlineTabs .mainline-btn').forEach(b => b.classList.remove('active-main'));
+                    btn.classList.add('active-main');
+                    renderTasksPage();
+                });
+            });
+        }
+        
+        // 快速任务入口
+        const quickTasksBtn = document.getElementById("quickTasksBtn");
+        if(quickTasksBtn) {
+            quickTasksBtn.addEventListener('click', () => switchPage('tasks'));
+        }
+        
+        const quickGrowthBtn = document.getElementById("quickGrowthBtn");
+        if(quickGrowthBtn) {
+            quickGrowthBtn.addEventListener('click', () => switchPage('growth'));
+        }
+        
+        const quickRewardsBtn = document.getElementById("quickRewardsBtn");
+        if(quickRewardsBtn) {
+            quickRewardsBtn.addEventListener('click', () => switchPage('rewards'));
+        }
+        
+        const quickStatsBtn = document.getElementById("quickStatsBtn");
+        if(quickStatsBtn) {
+            quickStatsBtn.addEventListener('click', () => switchPage('stats'));
+        }
+        
+        // 日历导航
+        const prevMonthBtn = document.getElementById("prevMonthBtn");
+        if(prevMonthBtn) {
+            prevMonthBtn.addEventListener('click', prevMonth);
+        }
+        
+        const nextMonthBtn = document.getElementById("nextMonthBtn");
+        if(nextMonthBtn) {
+            nextMonthBtn.addEventListener('click', nextMonth);
+        }
+        
+        // 保存心得按钮
+        const saveReflectionBtn = document.getElementById("saveReflectionBtn");
+        if(saveReflectionBtn) {
+            saveReflectionBtn.addEventListener('click', saveDailyReflection);
+        }
+        
+        // 导出和重置按钮
+        const exportExcelBtn = document.getElementById("exportExcelBtn");
+        if(exportExcelBtn) {
+            exportExcelBtn.addEventListener('click', exportToExcel);
+        }
+        
+        const resetDailyBtn = document.getElementById("resetDailyBtn");
+        if(resetDailyBtn) {
+            resetDailyBtn.addEventListener('click', manualResetDaily);
+        }
+        
+        // 完全重置按钮
+        const completeResetBtn = document.getElementById("completeResetBtn");
+        if(completeResetBtn) {
+            setupLongPressReset(completeResetBtn);
+        }
+    }
+    
+    // 启动应用
+    window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>    
