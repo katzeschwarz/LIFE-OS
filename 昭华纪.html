@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>昭华纪</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f2eee9; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; padding: 2rem; color: #2c2a29; }
+        .container { max-width: 1600px; margin: 0 auto; background: #fffdf9; border-radius: 2rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08); padding: 1.8rem 2rem; border: 1px solid #ece4db; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e7dfd7; padding-bottom: 1rem; }
+        .title-section h1 { font-size: 1.9rem; font-weight: 700; background: linear-gradient(135deg, #6b4e71, #3f5e6b); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .mode-switch { display: flex; gap: 8px; background: #f0ece7; border-radius: 48px; padding: 0.2rem; flex-wrap: wrap; }
+        .mode-btn { padding: 0.5rem 1rem; border-radius: 40px; font-weight: 600; cursor: pointer; background: transparent; border: none; color: #6c5a4f; transition: 0.2s; white-space: nowrap; }
+        .mode-btn.active { background: #6b4e71; color: white; }
+        .tool-buttons { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+        .btn-icon { background: white; border: 1px solid #e2d9d2; padding: 0.4rem 1rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #5b4b3f; transition: 0.2s; }
+        .btn-icon:hover { background: #fbf7f2; border-color: #cbbcaa; }
+        .btn-primary { background: #6b4e71; border-color: #5b3f61; color: white; }
+        .btn-primary:hover { background: #573d5e; }
+        .global-year-bar { background: #f2ede8; border-radius: 3rem; padding: 0.5rem 1.5rem; margin-bottom: 1.8rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem; border: 1px solid #e3dbd2; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1.8rem; }
+        .stat-card { background: #fefcf9; border-radius: 1.8rem; padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid #e6dfd8; transition: 0.2s; }
+        .stat-card:hover { background: white; border-color: #cfc3b7; transform: translateY(-2px); }
+        .stat-info h3 { font-size: 1.6rem; font-weight: 800; color: #6b4e71; }
+        .action-bar { background: #fcf9f6; border-radius: 3rem; padding: 0.5rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.8rem; border: 1px solid #e6dfd8; }
+        .search-area { display: flex; align-items: center; background: white; border-radius: 3rem; padding: 0.2rem 1rem; border: 1px solid #e0d6ce; flex: 2; }
+        .search-area input { border: none; background: transparent; padding: 0.55rem; width: 100%; outline: none; }
+        .filter-group { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+        .filter-chip { background: #f0ece7; border-radius: 2rem; padding: 0.35rem 1.2rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #5b4b3f; }
+        .filter-chip.active { background: #6b4e71; color: white; }
+        .table-wrapper { background: white; border-radius: 1.5rem; overflow-x: auto; border: 1px solid #eae2db; margin-bottom: 1rem; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+        .data-table th { text-align: left; padding: 1rem 0.8rem; background: #fefaf6; color: #6b4e71; border-bottom: 2px solid #ece2da; }
+        .data-table td { padding: 0.8rem; border-bottom: 1px solid #f1ebe6; word-break: break-word; }
+        .clickable-name { color: #6b4e71; font-weight: 600; cursor: pointer; border-bottom: 1px dashed #cfc2b8; }
+        .action-icons { display: flex; gap: 12px; align-items: center; }
+        .action-icons i { font-size: 1.1rem; cursor: pointer; color: #b7a692; }
+        .action-icons i:hover { color: #6b4e71; }
+        .graph-container { background: #fefcf9; border-radius: 1.5rem; border: 1px solid #eae2db; padding: 1rem; min-height: 65vh; }
+        #orgCy, #personCy { width: 100%; height: 60vh; background: #fffefc; border-radius: 1rem; }
+        .graph-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.5rem 0; }
+        .timeline-layout { display: flex; gap: 1.8rem; min-height: 65vh; }
+        .timeline-sidebar { flex: 1.2; background: #fefcf9; border-radius: 1.5rem; border: 1px solid #eae2db; overflow-y: auto; padding: 1rem; max-height: 70vh; }
+        .timeline-content { flex: 2.5; background: #fefcf9; border-radius: 1.5rem; border: 1px solid #eae2db; padding: 1.5rem; overflow-y: auto; max-height: 70vh; }
+        /* 时间线详情区域行间距1.75 */
+        .timeline-content .detail-view p, .timeline-content .detail-view div, .timeline-content .detail-view .detail-desc,
+        .modal-container.view-detail p, .modal-container.view-detail .detail-desc, .detail-view .detail-desc {
+            line-height: 1.75 !important;
+        }
+        .timeline-year-group { margin-bottom: 1.2rem; }
+        .year-header { font-weight: 800; font-size: 1rem; color: #6b4e71; padding: 0.4rem 0.8rem; background: #f2ede8; border-radius: 2rem; margin-bottom: 0.5rem; }
+        .event-item { padding: 0.5rem 0.8rem 0.5rem 1.8rem; margin: 0.2rem 0; cursor: pointer; border-radius: 1rem; font-size: 0.85rem; color: #5b4b3f; border-left: 2px solid transparent; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+        .event-item:hover { background: #f2ede8; }
+        .event-item.active { background: #e7dfd7; border-left-color: #6b4e71; font-weight: 500; }
+        .event-title { font-weight: 500; flex: 1; }
+        .event-date { font-size: 0.7rem; color: #8f7a68; margin-top: 0.2rem; }
+        .status-badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 30px; background: #eee3d8; color: #5d4638; margin-left: 6px; white-space: nowrap; }
+        .status-badge.draft { background: #e9dbc9; color: #a5662e; }
+        .status-badge.final { background: #6b4e7122; color: #6b4e71; border: 1px solid #cbb3c2; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(60,50,45,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1200; visibility: hidden; opacity: 0; transition: 0.2s; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-container { background: #fffefc; max-width: 760px; width: 92%; max-height: 85vh; border-radius: 2rem; overflow-y: auto; padding: 2rem 2.2rem; box-shadow: 0 25px 40px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { font-weight: 700; color: #6b4e71; display: block; margin-bottom: 0.3rem; font-size: 0.85rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.7rem 1rem; border: 1px solid #e0d6ce; border-radius: 1.2rem; font-family: inherit; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.8rem; }
+        .btn-cancel { background: #f0ece7; padding: 0.5rem 1.4rem; border-radius: 2rem; border: none; cursor: pointer; }
+        .btn-save { background: #6b4e71; color: white; padding: 0.5rem 1.8rem; border-radius: 2rem; border: none; cursor: pointer; }
+        .log-entry { background: #fefaf6; border-radius: 1rem; padding: 0.8rem; margin-bottom: 0.8rem; border-left: 4px solid #6b4e71; }
+        .log-date { font-weight: 800; color: #6b4e71; }
+        .loading-toast { position: fixed; bottom: 20px; right: 20px; background: #6b4e71; color: white; padding: 0.5rem 1.2rem; border-radius: 2rem; z-index: 1300; }
+        footer { text-align: center; margin-top: 1.8rem; font-size: 0.7rem; color: #a48e7c; }
+        .linked-events { margin-top: 0.5rem; padding-left: 1rem; border-left: 3px solid #e0d4ca; }
+        .linked-event-item { background: #fef4e8; padding: 0.5rem; margin: 0.5rem 0; border-radius: 1rem; cursor: pointer; border-left: 3px solid #6b4e71; }
+        .modal-container .view-detail p, .detail-view p, .modal-container .detail-desc {
+            line-height: 1.75 !important;
+        }
+        .relation-legend { display: flex; gap: 12px; align-items: center; justify-content: flex-start; margin-top: 8px; font-size: 0.7rem; color: #5e4b3c; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 20px; display: inline-block; margin-right: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="title-section"><h1><i class="fas fa-tree"></i> 昭华纪</h1><p>A WORLD EXISTS BECAUSE OF YOU</p></div>
+        <div class="mode-switch" id="modeSwitch">
+            <button class="mode-btn active" data-mode="character">👥 人物</button>
+            <button class="mode-btn" data-mode="location">🗺️ 地点</button>
+            <button class="mode-btn" data-mode="clan">🏛️ 世家大族</button>
+            <button class="mode-btn" data-mode="gov">🏢 行政架构</button>
+            <button class="mode-btn" data-mode="other">📦 其他设定</button>
+            <button class="mode-btn" data-mode="timeline">⏳ 时间线</button>
+            <button class="mode-btn" data-mode="org">📊 行政架构图</button>
+            <button class="mode-btn" data-mode="personRelation">🔗 人物关系图</button>
+            <button class="mode-btn" data-mode="changelog">📋 更新日志</button>
+        </div>
+        <div class="tool-buttons">
+            <button id="exportExcelBtn" class="btn-icon"><i class="fas fa-download"></i> <i class="fas fa-file-excel"></i> 导出Excel</button>
+            <button id="importExcelBtn" class="btn-icon"><i class="fas fa-upload"></i> <i class="fas fa-file-excel"></i> 导入Excel</button>
+            <input type="file" id="fileExcelInput" accept=".xlsx, .xls, .csv" style="display:none">
+        </div>
+    </div>
+
+    <div class="global-year-bar">
+        <div class="global-year-label"><i class="fas fa-calendar-alt"></i> 昭华历 · 当前纪元</div>
+        <div class="global-year-input">
+            <input type="text" id="globalCurrentYear" placeholder="例：昭华42年" value="昭华42年">
+            <button id="updateGlobalYearBtn" class="btn-icon">更新</button>
+        </div>
+    </div>
+
+    <!-- 各模块视图容器 -->
+    <div id="characterView" class="table-wrapper"></div>
+    <div id="locationView" class="table-wrapper" style="display:none"></div>
+    <div id="clanView" class="table-wrapper" style="display:none"></div>
+    <div id="govView" class="table-wrapper" style="display:none"></div>
+    <div id="otherView" class="table-wrapper" style="display:none"></div>
+    <div id="timelineView" class="timeline-layout" style="display:none">
+        <div class="timeline-sidebar" id="timelineSidebar"><div id="timelineTree"></div></div>
+        <div class="timeline-content" id="timelineDetail"><div class="empty-timeline">请从左侧选择事件</div></div>
+    </div>
+    <div id="orgGraphView" style="display:none">
+        <div class="graph-controls"><button id="resetOrgGraph" class="btn-icon">重置视图</button></div>
+        <div class="graph-container"><div id="orgCy"></div></div>
+        <p style="margin-top:0.5rem;font-size:0.75rem;color:#8f7a68;">行政架构树形图：外朝/内廷 → 部门 → 官职，橙色节点表示关联人物可点击</p>
+    </div>
+    <div id="personRelationView" style="display:none">
+        <div class="graph-controls">
+            <button id="resetPersonGraph" class="btn-icon"><i class="fas fa-sync-alt"></i> 重置布局</button>
+            <button id="refreshPersonGraph" class="btn-icon"><i class="fas fa-redo-alt"></i> 刷新图谱</button>
+            <div class="relation-legend"><span><i class="fas fa-user-circle"></i> 节点：人物</span><span style="margin-left:12px;"><span class="legend-dot" style="background:#c99e6f;"></span> 有关联人物</span><span style="margin-left:12px;"><span class="legend-dot" style="background:#6b4e71;"></span> 孤立角色</span></div>
+        </div>
+        <div class="graph-container"><div id="personCy"></div></div>
+        <p style="margin-top:0.5rem;font-size:0.75rem;color:#8f7a68;"><i class="fas fa-info-circle"></i> 人物关系图：根据「关联人物」字段自动解析，边上的标签为关系类型。点击任意人物可查看详细档案。</p>
+    </div>
+    <div id="changelogView" style="display:none">
+        <div style="display:flex; justify-content:space-between; margin-bottom:1rem;"><h3><i class="fas fa-history"></i> 更新日志</h3><button id="addLogBtn" class="btn-icon btn-primary">新增记录</button></div>
+        <div id="logListContainer" style="max-height:65vh; overflow-y:auto;"></div>
+    </div>
+<footer>
+<!-- 页面底部日期 -->
+<div style="text-align:center; padding:15px 0; font-size:14px; color:#666;">
+    当前日期：<span id="currentDate"></span>
+</div>
+
+<script>
+    // 获取当前日期并格式化
+    const date = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        weekday: 'long' 
+    };
+    document.getElementById("currentDate").innerText = 
+        date.toLocaleDateString('zh-CN', options);
+</script>
+</footer>
+</div>
+
+<!-- 编辑模态框 -->
+<div id="entryModal" class="modal-overlay"><div class="modal-container"><h3 id="modalTitle">编辑条目</h3><div id="dynamicForm"></div><div class="modal-buttons"><button class="btn-cancel" id="closeModalBtn">取消</button><button class="btn-save" id="saveEntryBtn">保存</button></div></div></div>
+<!-- 时间线模态框（增强：增加状态 + 自动记录修改时间戳） -->
+<div id="timelineModal" class="modal-overlay"><div class="modal-container"><h3 id="timelineModalTitle">时间线事件</h3>
+    <div class="form-group"><label>日期</label><div class="date-select-row"><select id="tlEra"><option>昭华</option><option>前昭华</option></select><select id="tlYear"></select><span>年</span><select id="tlMonth"></select><span>月</span><select id="tlDay"></select><span>日</span></div></div>
+    <div class="form-group"><label>事件名称</label><input type="text" id="tlEventName"></div>
+    <div class="form-group"><label>关联人物/势力</label><input type="text" id="tlRelated" placeholder="多个用逗号分隔"></div>
+    <div class="form-group"><label>详细描述</label><textarea id="tlDesc" rows="4"></textarea></div>
+    <div class="form-group"><label>事件状态</label><select id="tlStatus"><option value="draft">📝 草稿</option><option value="final">✅ 定稿</option></select></div>
+    <div class="modal-buttons"><button class="btn-cancel" id="closeTimelineBtn">取消</button><button class="btn-save" id="saveTimelineBtn">保存</button></div></div></div>
+<!-- 日志模态框 -->
+<div id="logModal" class="modal-overlay"><div class="modal-container"><h3 id="logModalTitle">日志条目</h3><div class="form-group"><label>日期</label><input type="date" id="logDate"></div><div class="form-group"><label>更新内容</label><textarea id="logContent" rows="4"></textarea></div><div class="form-group"><label>下一步计划</label><textarea id="logPlan" rows="2"></textarea></div><div class="modal-buttons"><button class="btn-cancel" id="closeLogBtn">取消</button><button class="btn-save" id="saveLogBtn">保存</button></div></div></div>
+
+<script>
+    // ===================== 数据结构 =====================
+    let characters = [];
+    let locations = [];
+    let clans = [];
+    let govs = [];
+    let others = [];
+    let timeline = [];
+    let changelog = [];
+    let globalCurrentYear = "昭华42年";
+    let currentMode = "character";
+    let editingId = null, editingTimelineId = null, editingLogId = null;
+    let selectedTimelineId = null;
+    let orgCy = null, personCy = null;
+
+    const STORAGE = { characters:"char_v5", locations:"loc_v5", clans:"clan_v5", govs:"gov_v5", others:"other_v5", timeline:"tl_v6", changelog:"log_v5", year:"global_year" };
+    function saveAll() {
+        localStorage.setItem(STORAGE.characters, JSON.stringify(characters));
+        localStorage.setItem(STORAGE.locations, JSON.stringify(locations));
+        localStorage.setItem(STORAGE.clans, JSON.stringify(clans));
+        localStorage.setItem(STORAGE.govs, JSON.stringify(govs));
+        localStorage.setItem(STORAGE.others, JSON.stringify(others));
+        localStorage.setItem(STORAGE.timeline, JSON.stringify(timeline));
+        localStorage.setItem(STORAGE.changelog, JSON.stringify(changelog));
+        localStorage.setItem(STORAGE.year, globalCurrentYear);
+    }
+    // 辅助：格式化日期为 昭华/前昭华 年 月 日 (仅用于显示修改日期)
+    function formatDateObj(dateISO) {
+        if(!dateISO) return "未知";
+        let d = new Date(dateISO);
+        if(isNaN(d.getTime())) return dateISO;
+        return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+    }
+    // 为旧数据补充 status, modifiedDate
+    function upgradeTimelineData() {
+        let updated = false;
+        for(let ev of timeline) {
+            if(!ev.status) { ev.status = "final"; updated=true; }
+            if(!ev.modifiedDate) { ev.modifiedDate = new Date().toISOString(); updated=true; }
+        }
+        if(updated) saveAll();
+    }
+    function loadData() {
+        characters = JSON.parse(localStorage.getItem(STORAGE.characters) || "[]");
+        locations = JSON.parse(localStorage.getItem(STORAGE.locations) || "[]");
+        clans = JSON.parse(localStorage.getItem(STORAGE.clans) || "[]");
+        govs = JSON.parse(localStorage.getItem(STORAGE.govs) || "[]");
+        others = JSON.parse(localStorage.getItem(STORAGE.others) || "[]");
+        timeline = JSON.parse(localStorage.getItem(STORAGE.timeline) || "[]");
+        changelog = JSON.parse(localStorage.getItem(STORAGE.changelog) || "[]");
+        globalCurrentYear = localStorage.getItem(STORAGE.year) || "昭华42年";
+        document.getElementById('globalCurrentYear').value = globalCurrentYear;
+        if(characters.length===0) loadSampleData();
+        upgradeTimelineData();  // 升级时间线字段
+        saveAll();
+    }
+    function loadSampleData() {
+        characters = [
+            { id: genId(), name:"苏红鱼", identity:"女主", relationChars:"易遇：弟弟/情人,李钰：妻子", birthYear:"昭华5年", deathYear:"", relatedEvents:"", remarks:"" },
+            { id: genId(), name:"易遇", identity:"男主", relationChars:"苏红鱼：姐姐/情人", birthYear:"昭华8年", deathYear:"", relatedEvents:"", remarks:"" },
+            { id: genId(), name:"李钰", identity:"皇子", relationChars:"苏红鱼：丈夫", birthYear:"昭华7年", deathYear:"", relatedEvents:"", remarks:"" },
+            { id: genId(), name:"裴云", identity:"谋士", relationChars:"苏红鱼：挚友", birthYear:"昭华6年", deathYear:"", relatedEvents:"", remarks:"" }
+        ];
+        locations = [{ id: genId(), name:"青州道", setting:"北境要道", capital:"琅琊", modern:"鲁中南", climate:"温带", custom:"尚武", economy:"丝绸", mineral:"铁", officials:"李崇言", clans:"琅琊王氏", remarks:"" }];
+        clans = [{ id: genId(), name:"琅琊王氏", relatedPersons:"苏红鱼", location:"青州道", setting:"累世公卿", remarks:"" }];
+        govs = [
+            { id: genId(), component:"外朝", department:"中书省", position:"中书令", relatedPerson:"李崇言", duty:"掌机要", grade:"正二品", successive:"", remarks:"" },
+            { id: genId(), component:"外朝", department:"门下省", position:"侍中", relatedPerson:"", duty:"封驳审议", grade:"正二品", successive:"", remarks:"" },
+            { id: genId(), component:"内廷", department:"内侍省", position:"内侍监", relatedPerson:"", duty:"宫廷事务", grade:"从三品", successive:"", remarks:"" }
+        ];
+        others = [{ id: genId(), name:"灵墟秘境", content:"每甲子开启", relation:"苏红鱼", remarks:"" }];
+        const nowISO = new Date().toISOString();
+        timeline = [{ id: genId(), era:"昭华", year:9, month:3, day:15, name:"初入江湖", related:"苏红鱼,易遇", description:"结识易遇。", status:"final", modifiedDate: nowISO }];
+        changelog = [];
+    }
+    function genId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 8); }
+
+    function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    function showToast(msg) { let t=document.querySelector('.loading-toast'); if(!t){ t=document.createElement('div'); t.className='loading-toast'; document.body.appendChild(t); } t.innerText=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
+
+    // 获取与人物关联的时间线事件
+    function getLinkedEvents(personName) {
+        if(!personName) return [];
+        let res = [];
+        for(let ev of timeline) {
+            if(!ev.related) continue;
+            let names = ev.related.split(/[,，]+/).map(s=>s.trim());
+            if(names.includes(personName)) res.push(ev);
+        }
+        res.sort((a,b)=> (a.era==='前昭华'?-a.year:a.year)*10000 + a.month*100 + a.day - ((b.era==='前昭华'?-b.year:b.year)*10000 + b.month*100 + b.day));
+        return res;
+    }
+
+    // ========== 人物关系解析引擎 & 优化分散布局 ==========
+    function parseRelationString(relationStr, sourceName) {
+        if (!relationStr || typeof relationStr !== 'string') return [];
+        const pairs = relationStr.split(/[,，]+/);
+        const results = [];
+        for (let pair of pairs) {
+            pair = pair.trim();
+            if (!pair) continue;
+            let target = '', relation = '';
+            const colonIndex = pair.search(/[:：]/);
+            if (colonIndex !== -1) {
+                target = pair.substring(0, colonIndex).trim();
+                relation = pair.substring(colonIndex + 1).trim();
+            } else {
+                target = pair;
+                relation = "关联";
+            }
+            if (target && target !== sourceName) results.push({ target, relation: relation || "关联" });
+        }
+        return results;
+    }
+
+    function buildPersonGraphElements() {
+        const nodes = [];
+        const edgesMap = new Map();
+        const nameToIdMap = new Map();
+        for (let p of characters) {
+            nameToIdMap.set(p.name, p.id);
+            nodes.push({ data: { id: p.id, label: p.name, identity: p.identity, relationCount: 0 } });
+        }
+        const degreeMap = new Map();
+        for (let p of characters) {
+            const relations = parseRelationString(p.relationChars, p.name);
+            for (let rel of relations) {
+                const targetId = nameToIdMap.get(rel.target);
+                if (!targetId) continue;
+                if (targetId === p.id) continue;
+                const id1 = p.id, id2 = targetId;
+                const key = id1 < id2 ? `${id1}|${id2}` : `${id2}|${id1}`;
+                if (!edgesMap.has(key)) edgesMap.set(key, new Set());
+                edgesMap.get(key).add(rel.relation);
+                degreeMap.set(p.id, (degreeMap.get(p.id) || 0) + 1);
+                degreeMap.set(targetId, (degreeMap.get(targetId) || 0) + 1);
+            }
+        }
+        for (let node of nodes) {
+            const hasEdges = (degreeMap.get(node.data.id) || 0) > 0;
+            node.style = { 'background-color': hasEdges ? '#c99e6f' : '#6b4e71' };
+        }
+        const edges = [];
+        for (let [key, relSet] of edgesMap.entries()) {
+            const [idA, idB] = key.split('|');
+            const relationLabel = Array.from(relSet).join(' / ');
+            edges.push({ data: { id: `edge_${key}`, source: idA, target: idB, label: relationLabel } });
+        }
+        return { nodes, edges };
+    }
+
+    function renderPersonRelationGraph() {
+        const container = document.getElementById('personCy');
+        if (!container) return;
+        if (characters.length === 0) {
+            container.innerHTML = '<div class="empty-timeline" style="padding:2rem;text-align:center;">暂无人物数据，请先在「人物」模块中添加角色。</div>';
+            if (personCy) { personCy.destroy(); personCy = null; }
+            return;
+        }
+        const { nodes, edges } = buildPersonGraphElements();
+        if (nodes.length === 0) { container.innerHTML = '<div class="empty-timeline" style="padding:2rem;text-align:center;">暂无有效节点</div>'; return; }
+        if (personCy) personCy.destroy();
+        personCy = cytoscape({
+            container: container,
+            elements: { nodes: nodes, edges: edges },
+            style: [
+                { selector: 'node', style: { 'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center', 'font-size': '12px', 'font-weight': 'bold', 'color': '#fff', 'background-color': 'data(background-color)', 'shape': 'ellipse', 'width': 60, 'height': 60, 'padding': '6px', 'border-width': 1.5, 'border-color': '#5a3e47' } },
+                { selector: 'edge', style: { 'width': 2, 'line-color': '#b7a692', 'curve-style': 'bezier', 'label': 'data(label)', 'font-size': '9px', 'text-rotation': 'autorotate', 'color': '#5b3e2e', 'text-background-color': '#fff9ef', 'text-background-opacity': 0.7, 'text-background-padding': '2px', 'text-wrap': 'wrap' } }
+            ],
+            layout: { name: 'cose', idealEdgeLength: 180, nodeRepulsion: 10000, gravity: 0.2, numIter: 1500, animate: true, spacingFactor: 1.8, coolingFactor: 0.9 },
+            wheelSensitivity: 0.8
+        });
+        personCy.fit();
+        personCy.on('tap', 'node', ev => { const nodeId = ev.target.id(); openViewModal('character', nodeId); });
+        personCy.on('tap', 'edge', ev => { const edge = ev.target(); showToast(`关系：${edge.data('label') || '未知关联'}`); });
+    }
+    function refreshPersonGraph() { if(currentMode === 'personRelation') renderPersonRelationGraph(); }
+
+    // ========== 时间线增强: 状态标签 + 修改日期 ==========
+    function renderTimelineTree(){
+        let container=document.getElementById('timelineTree'); if(!container) return;
+        if(timeline.length===0){ container.innerHTML='<div class="empty-timeline">暂无事件</div>'; return; }
+        let sorted=[...timeline].sort((a,b)=>getEventSortValue(a)-getEventSortValue(b));
+        let groups=new Map(); for(let ev of sorted){ let key=`${ev.era}${ev.year}`; if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(ev); }
+        let html=''; for(let [yk,evs] of groups.entries()){ html+=`<div class="timeline-year-group"><div class="year-header">📅 ${escapeHtml(yk)}年</div>`; for(let ev of evs){ let active=(selectedTimelineId===ev.id)?'active':''; let statusText = (ev.status === 'draft') ? '草稿' : '定稿'; let statusClass = (ev.status === 'draft') ? 'draft' : 'final'; html+=`<div class="event-item ${active}" data-id="${ev.id}"><span class="event-title">${escapeHtml(ev.name)}</span><div style="display:flex; gap:6px; align-items:center;"><span class="status-badge ${statusClass}">${statusText}</span><span class="event-date">${ev.month}月${ev.day}日</span></div></div>`; } html+=`</div>`; }
+        container.innerHTML=html;
+        document.querySelectorAll('.event-item').forEach(el=>el.addEventListener('click',()=>{ let id=el.dataset.id; if(id) selectTimelineEvent(id); }));
+        if(selectedTimelineId && document.querySelector(`.event-item[data-id="${selectedTimelineId}"]`)) selectTimelineEvent(selectedTimelineId);
+        else if(sorted.length) selectTimelineEvent(sorted[0].id);
+    }
+    function selectTimelineEvent(id){
+        selectedTimelineId=id; let ev=timeline.find(e=>e.id===id); if(!ev) return;
+        document.querySelectorAll('.event-item').forEach(el=>{ if(el.dataset.id===id) el.classList.add('active'); else el.classList.remove('active'); });
+        let statusLabel = ev.status === 'draft' ? '📝 草稿' : '✅ 定稿';
+        let modifiedStr = ev.modifiedDate ? formatDateObj(ev.modifiedDate) : '未记录';
+        let html=`<div class="detail-view"><h3>${escapeHtml(ev.name)}</h3><div class="detail-meta">${formatDate(ev)}</div><div><strong>状态：</strong> ${statusLabel}</div><div><strong>最后修改：</strong> ${modifiedStr}</div><div><strong>关联：</strong> ${escapeHtml(ev.related||'—')}</div><div class="detail-desc">${escapeHtml(ev.description||'').replace(/\n/g,'<br>')}</div><div style="margin-top:1.5rem;"><button class="btn-icon" id="editTimelineBtn">编辑</button> <button class="btn-icon" id="deleteTimelineBtn">删除</button></div></div>`;
+        document.getElementById('timelineDetail').innerHTML=html;
+        document.getElementById('editTimelineBtn')?.addEventListener('click',()=>openTimelineModal(ev.id));
+        document.getElementById('deleteTimelineBtn')?.addEventListener('click',()=>{ if(confirm('删除事件')){ timeline=timeline.filter(e=>e.id!==ev.id); if(selectedTimelineId===ev.id) selectedTimelineId=null; saveAll(); renderTimelineTree(); if(timeline.length) selectTimelineEvent(timeline[0].id); else document.getElementById('timelineDetail').innerHTML='<div class="empty-timeline">暂无事件</div>'; showToast('已删除'); } });
+    }
+    function openTimelineModal(id=null){
+        initYearSelects(); editingTimelineId=id;
+        if(id){ let ev=timeline.find(e=>e.id===id); if(ev){ document.getElementById('tlEra').value=ev.era; document.getElementById('tlYear').value=ev.year; document.getElementById('tlMonth').value=ev.month; document.getElementById('tlDay').value=ev.day; document.getElementById('tlEventName').value=ev.name; document.getElementById('tlRelated').value=ev.related||''; document.getElementById('tlDesc').value=ev.description||''; document.getElementById('tlStatus').value=ev.status||'final'; document.getElementById('timelineModalTitle').innerText='编辑事件'; } }
+        else { document.getElementById('tlEra').value='昭华'; document.getElementById('tlYear').value=1; document.getElementById('tlMonth').value=1; document.getElementById('tlDay').value=1; document.getElementById('tlEventName').value=''; document.getElementById('tlRelated').value=''; document.getElementById('tlDesc').value=''; document.getElementById('tlStatus').value='draft'; document.getElementById('timelineModalTitle').innerText='新增事件'; }
+        document.getElementById('timelineModal').classList.add('active');
+    }
+    function saveTimeline(){
+        let era=document.getElementById('tlEra').value, year=parseInt(document.getElementById('tlYear').value), month=parseInt(document.getElementById('tlMonth').value), day=parseInt(document.getElementById('tlDay').value);
+        let name=document.getElementById('tlEventName').value.trim(); if(!name){ alert('事件名称不能为空'); return; }
+        let related=document.getElementById('tlRelated').value.trim(), desc=document.getElementById('tlDesc').value.trim();
+        let status=document.getElementById('tlStatus').value;
+        let nowISO = new Date().toISOString();
+        if(editingTimelineId===null) timeline.push({ id:genId(), era, year, month, day, name, related, description:desc, status, modifiedDate: nowISO });
+        else { let idx=timeline.findIndex(e=>e.id===editingTimelineId); if(idx!==-1) timeline[idx]={ ...timeline[idx], era, year, month, day, name, related, description:desc, status, modifiedDate: nowISO }; }
+        saveAll(); document.getElementById('timelineModal').classList.remove('active'); renderTimelineTree();
+        if(selectedTimelineId && timeline.some(e=>e.id===selectedTimelineId)) selectTimelineEvent(selectedTimelineId);
+        else if(timeline.length) selectTimelineEvent(timeline[0].id);
+        showToast('时间线已保存');
+    }
+
+    // 辅助日期控件
+    function initYearSelects(){ let ys=document.getElementById('tlYear'); if(ys){ ys.innerHTML=''; for(let i=1;i<=200;i++){let o=document.createElement('option'); o.value=i; o.textContent=i; ys.appendChild(o);} let ms=document.getElementById('tlMonth'); ms.innerHTML=''; for(let i=1;i<=12;i++){let o=document.createElement('option'); o.value=i; o.textContent=i; ms.appendChild(o);} let ds=document.getElementById('tlDay'); ds.innerHTML=''; for(let i=1;i<=30;i++){let o=document.createElement('option'); o.value=i; o.textContent=i; ds.appendChild(o);} } }
+    function getEventSortValue(ev){ let y=ev.year; if(ev.era==='前昭华') y=-y; return y*10000+ev.month*100+ev.day; }
+    function formatDate(ev){ return `${ev.era}${ev.year}年${ev.month}月${ev.day}日`; }
+
+    // 行政架构图、日志等其余函数保持原样（仅调整人物关系图布局参数）
+    function renderOrgGraph(){
+        if(govs.length===0){ document.getElementById('orgCy').innerHTML = '<div class="empty-timeline">暂无行政架构数据，请先在“行政架构”表中添加数据。</div>'; return; }
+        let compMap = new Map(); let deptMap = new Map(); let posNodes = [];
+        govs.forEach(g=>{ if(g.component && !compMap.has(g.component)) compMap.set(g.component, { data:{ id:`comp_${g.component}`, label:g.component } }); if(g.department && !deptMap.has(g.department)) deptMap.set(g.department, { data:{ id:`dept_${g.department}`, label:g.department, parent:g.component } }); posNodes.push({ data:{ id:g.id, label:g.position, parent:g.department, related:g.relatedPerson } }); });
+        let nodes = [...compMap.values(), ...deptMap.values(), ...posNodes]; let edges = [];
+        for(let d of deptMap.values()) edges.push({ data:{ source:`comp_${d.data.parent}`, target:d.data.id } });
+        for(let p of posNodes) edges.push({ data:{ source:`dept_${p.data.parent}`, target:p.data.id } });
+        if(orgCy) orgCy.destroy();
+        orgCy = cytoscape({ container:document.getElementById('orgCy'), elements:{ nodes, edges }, style:[{selector:'node',style:{'label':'data(label)','text-valign':'center','text-halign':'center','font-size':'11px','color':'#fff','background-color':'#6b4e71','shape':'roundrectangle','width':'label','padding':'6px'}},{selector:'edge',style:{'width':2,'line-color':'#b7a692'}}], layout:{ name:'breadthfirst', roots:'[id^="comp_"]', directed:true, spacingFactor:1.8, animate:false } });
+        orgCy.on('tap','node',ev=>{ let label=ev.target.data('label'); let gov=govs.find(g=>g.position===label); if(gov) openViewModal('gov',gov.id); else showToast(`点击了：${label}`); });
+        orgCy.fit();
+    }
+    function renderChangelog(){ /* 不变，略 */ 
+        let container=document.getElementById('logListContainer'); if(!container) return;
+        if(changelog.length===0){ container.innerHTML='<div class="empty-timeline">暂无日志</div>'; return; }
+        let sorted=[...changelog].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        let html=''; for(let l of sorted) html+=`<div class="log-entry"><div class="log-date">${escapeHtml(l.date)}</div><div>${escapeHtml(l.content)}</div><div class="log-plan">📌 ${escapeHtml(l.plan||'')}</div><div><i class="fas fa-edit" data-id="${l.id}" style="cursor:pointer;"></i> <i class="fas fa-trash-alt" data-id="${l.id}" style="cursor:pointer; margin-left:12px;"></i></div></div>`;
+        container.innerHTML=html;
+        document.querySelectorAll('#logListContainer .fa-edit').forEach(el=>el.addEventListener('click',()=>openLogModal(el.dataset.id)));
+        document.querySelectorAll('#logListContainer .fa-trash-alt').forEach(el=>el.addEventListener('click',()=>{ if(confirm('删除日志')){ changelog=changelog.filter(l=>l.id!==el.dataset.id); saveAll(); renderChangelog(); showToast('已删除'); } }));
+    }
+    function openLogModal(id=null){ editingLogId=id; if(id){ let l=changelog.find(l=>l.id===id); if(l){ document.getElementById('logDate').value=l.date; document.getElementById('logContent').value=l.content; document.getElementById('logPlan').value=l.plan||''; document.getElementById('logModalTitle').innerText='编辑日志'; } } else { document.getElementById('logDate').value=new Date().toISOString().slice(0,10); document.getElementById('logContent').value=''; document.getElementById('logPlan').value=''; document.getElementById('logModalTitle').innerText='新增日志'; } document.getElementById('logModal').classList.add('active'); }
+    function saveLog(){ let date=document.getElementById('logDate').value, content=document.getElementById('logContent').value.trim(), plan=document.getElementById('logPlan').value.trim(); if(!date || !content){ alert('日期和内容不能为空'); return; } if(editingLogId===null) changelog.push({ id:genId(), date, content, plan }); else { let idx=changelog.findIndex(l=>l.id===editingLogId); if(idx!==-1) changelog[idx]={ ...changelog[idx], date, content, plan }; } saveAll(); document.getElementById('logModal').classList.remove('active'); renderChangelog(); showToast('日志已保存'); }
+    function exportToExcel(){ let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(characters), "人物"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(locations), "地点"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clans), "世家大族"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(govs), "行政架构"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(others), "其他设定"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(timeline.map(t=>({...t, dateStr:formatDate(t)}))), "时间线"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(changelog), "更新日志"); XLSX.writeFile(wb, `昭华纪_${Date.now()}.xlsx`); showToast('导出完成'); }
+    function importExcel(file){ const reader=new FileReader(); reader.onload=function(e){ let data=new Uint8Array(e.target.result); let wb=XLSX.read(data,{type:'array'}); if(wb.SheetNames.includes("人物")) characters=XLSX.utils.sheet_to_json(wb.Sheets["人物"]).map(r=>({...r, id:r.id||genId()})); if(wb.SheetNames.includes("地点")) locations=XLSX.utils.sheet_to_json(wb.Sheets["地点"]).map(r=>({...r, id:r.id||genId()})); if(wb.SheetNames.includes("世家大族")) clans=XLSX.utils.sheet_to_json(wb.Sheets["世家大族"]).map(r=>({...r, id:r.id||genId()})); if(wb.SheetNames.includes("行政架构")) govs=XLSX.utils.sheet_to_json(wb.Sheets["行政架构"]).map(r=>({...r, id:r.id||genId()})); if(wb.SheetNames.includes("其他设定")) others=XLSX.utils.sheet_to_json(wb.Sheets["其他设定"]).map(r=>({...r, id:r.id||genId()})); if(wb.SheetNames.includes("时间线")) timeline=XLSX.utils.sheet_to_json(wb.Sheets["时间线"]).map(r=>({...r, id:r.id||genId(), status: r.status||'final', modifiedDate: r.modifiedDate||new Date().toISOString()})); if(wb.SheetNames.includes("更新日志")) changelog=XLSX.utils.sheet_to_json(wb.Sheets["更新日志"]).map(r=>({...r, id:r.id||genId()})); saveAll(); refreshUI(); showToast('导入完成'); upgradeTimelineData(); }; reader.readAsArrayBuffer(file); }
+    
+    function renderTable(module, data, fields, idField='id'){ /* 保持原版 */ 
+        let container = document.getElementById(`${module}View`);
+        if(!container) return;
+        if(data.length===0){ container.innerHTML='<div class="empty-timeline">暂无数据，点击“新增”添加</div>'; return; }
+        let html = `<table class="data-table"><thead><tr>`;
+        for(let f of fields) html += `<th style="width:${f.width || 'auto'}">${f.label}</th>`;
+        html += `<th style="width:80px">操作</th></thead><tbody>`;
+        data.forEach(row => {
+            html += `<tr>`;
+            for(let f of fields){
+                let val = row[f.key] || '';
+                if(f.key === 'name') html += `<td><span class="clickable-name" data-id="${row[idField]}" data-module="${module}">${escapeHtml(val)}</span></td>`;
+                else html += `<td>${escapeHtml(val)}</td>`;
+            }
+            html += `<td class="action-icons"><i class="fas fa-edit" data-id="${row[idField]}" data-module="${module}" data-action="edit"></i><i class="fas fa-trash-alt" data-id="${row[idField]}" data-module="${module}" data-action="delete"></i> </td></tr>`;
+        });
+        html += `</tbody></table><div style="margin-top:1rem;"><button class="btn-icon btn-primary" data-module="${module}" id="addBtn_${module}"><i class="fas fa-plus"></i> 新增</button></div>`;
+        container.innerHTML = html;
+        document.querySelectorAll(`#${module}View .clickable-name`).forEach(el=>el.addEventListener('click',()=>openViewModal(el.dataset.module, el.dataset.id)));
+        document.querySelectorAll(`#${module}View .action-icons i`).forEach(icon=>{ let id=icon.dataset.id, mod=icon.dataset.module, act=icon.dataset.action; icon.addEventListener('click',()=>{ if(act==='edit') openEditModal(mod, id); else if(act==='delete' && confirm('永久删除？')){ deleteEntry(mod, id); showToast('已删除'); if(mod === 'character') refreshPersonGraph(); } }); });
+        let addBtn = document.getElementById(`addBtn_${module}`);
+        if(addBtn) addBtn.onclick = () => openEditModal(module, null);
+    }
+    function deleteEntry(module, id){ if(module==='character') characters = characters.filter(c=>c.id!==id); else if(module==='location') locations = locations.filter(c=>c.id!==id); else if(module==='clan') clans = clans.filter(c=>c.id!==id); else if(module==='gov') govs = govs.filter(c=>c.id!==id); else if(module==='other') others = others.filter(c=>c.id!==id); saveAll(); refreshUI(); if(currentMode === 'personRelation') renderPersonRelationGraph(); }
+    function getModuleData(module){ if(module==='character') return characters; if(module==='location') return locations; if(module==='clan') return clans; if(module==='gov') return govs; if(module==='other') return others; return []; }
+    function getFields(module){ if(module==='character') return [{key:'name',label:'人名',width:'15%'},{key:'identity',label:'身份',width:'15%'},{key:'relationChars',label:'关联人物',width:'25%'},{key:'birthYear',label:'生年',width:'10%'},{key:'deathYear',label:'卒年',width:'10%'},{key:'remarks',label:'备注',width:'20%'}]; if(module==='location') return [{key:'name',label:'地点名',width:'12%'},{key:'setting',label:'设定',width:'12%'},{key:'capital',label:'首府',width:'8%'},{key:'modern',label:'相当于如今',width:'10%'},{key:'climate',label:'气候',width:'6%'},{key:'custom',label:'民风',width:'6%'},{key:'economy',label:'经济',width:'8%'},{key:'mineral',label:'矿产',width:'6%'},{key:'officials',label:'官员',width:'8%'},{key:'clans',label:'世家大族',width:'8%'},{key:'remarks',label:'备注',width:'10%'}]; if(module==='clan') return [{key:'name',label:'名字',width:'15%'},{key:'relatedPersons',label:'关联人物',width:'25%'},{key:'location',label:'地点',width:'20%'},{key:'setting',label:'设定',width:'25%'},{key:'remarks',label:'备注',width:'15%'}]; if(module==='gov') return [{key:'component',label:'组成',width:'10%'},{key:'department',label:'部门',width:'15%'},{key:'position',label:'官职',width:'15%'},{key:'relatedPerson',label:'关联人物',width:'12%'},{key:'duty',label:'职责',width:'15%'},{key:'grade',label:'品级',width:'8%'},{key:'successive',label:'历任',width:'12%'},{key:'remarks',label:'备注',width:'10%'}]; if(module==='other') return [{key:'name',label:'设定名',width:'20%'},{key:'content',label:'设定内容',width:'35%'},{key:'relation',label:'关联',width:'20%'},{key:'remarks',label:'备注',width:'20%'}]; return []; }
+    function openEditModal(module, id){ let data = id ? getModuleData(module).find(d=>d.id===id) : null; let fields = getFields(module); let html = `<div class="form-group"><label>类别</label><input type="text" value="${module==='character'?'人物':module==='location'?'地点':module==='clan'?'世家大族':module==='gov'?'行政架构':'其他设定'}" disabled style="background:#f0ece7;"></div>`; fields.forEach(f=>{ let val = data ? (data[f.key]||'') : ''; html += `<div class="form-group"><label>${f.label}</label><textarea rows="2" id="field_${f.key}">${escapeHtml(val)}</textarea></div>`; }); document.getElementById('dynamicForm').innerHTML = html; document.getElementById('modalTitle').innerText = id ? '编辑条目' : '新增条目'; document.getElementById('entryModal').classList.add('active'); let saveBtn = document.getElementById('saveEntryBtn'); let newSave = saveBtn.cloneNode(true); saveBtn.parentNode.replaceChild(newSave, saveBtn); newSave.onclick = () => { let newData = { id: id || genId() }; for(let f of fields) newData[f.key] = document.getElementById(`field_${f.key}`).value.trim(); if(!newData.name && !newData.position && !newData.setting) { alert('请至少填写名称/官职/设定名'); return; } let arr = getModuleData(module); if(id){ let idx = arr.findIndex(d=>d.id===id); if(idx!==-1) arr[idx] = newData; } else arr.push(newData); saveAll(); closeModal(); refreshUI(); if(module === 'character') refreshPersonGraph(); showToast('保存成功'); }; }
+    function openViewModal(module, id){ let entry = getModuleData(module).find(d=>d.id===id); if(!entry) return; let fields = getFields(module); let html = `<p><strong>ID:</strong> ${entry.id}</p><hr>`; for(let f of fields){ let val = entry[f.key] || ''; if(val) html += `<p><strong>${f.label}:</strong><br>${escapeHtml(val).replace(/\n/g,'<br>')}</p>`; } if(module === 'character'){ let linkedEvents = getLinkedEvents(entry.name); if(linkedEvents.length){ html += `<p><strong>📌 时间线关联事件：</strong><br><div class="linked-events">`; for(let ev of linkedEvents){ let dateStr = `${ev.era}${ev.year}年${ev.month}月${ev.day}日`; html += `<div class="linked-event-item" data-event-id="${ev.id}"><strong>${escapeHtml(dateStr)} · ${escapeHtml(ev.name)}</strong><br>${escapeHtml(ev.description||'')}</div>`; } html += `</div></p>`; } else { html += `<p><strong>📌 时间线关联事件：</strong><br>暂无关联事件，可在「时间线」中为该人物添加关联。</p>`; } } let modal = document.createElement('div'); modal.className='modal-overlay active'; modal.innerHTML = `<div class="modal-container view-detail"><h3>详情</h3><div>${html}</div><div class="modal-buttons"><button class="btn-cancel">关闭</button></div></div>`; document.body.appendChild(modal); modal.querySelector('.btn-cancel').onclick = () => modal.remove(); modal.querySelectorAll('.linked-event-item').forEach(el=>{ el.addEventListener('click',()=>{ let eid = el.dataset.eventId; let ev = timeline.find(t=>t.id===eid); if(ev) showEventDetailModal(ev); }); }); }
+    function showEventDetailModal(ev){ let dateStr = `${ev.era}${ev.year}年${ev.month}月${ev.day}日`; let statusLabel = ev.status === 'draft' ? '📝 草稿' : '✅ 定稿'; let modifiedStr = ev.modifiedDate ? formatDateObj(ev.modifiedDate) : '未记录'; let html = `<div class="detail-view"><h3>${escapeHtml(ev.name)}</h3><div class="detail-meta">${dateStr}</div><div><strong>状态：</strong> ${statusLabel}</div><div><strong>最后修改：</strong> ${modifiedStr}</div><div><strong>关联：</strong> ${escapeHtml(ev.related||'—')}</div><div class="detail-desc">${escapeHtml(ev.description||'').replace(/\n/g,'<br>')}</div></div>`; let modal = document.createElement('div'); modal.className='modal-overlay active'; modal.innerHTML = `<div class="modal-container view-detail"><h3>事件详情</h3>${html}<div class="modal-buttons"><button class="btn-cancel">关闭</button></div></div>`; document.body.appendChild(modal); modal.querySelector('.btn-cancel').onclick = () => modal.remove(); }
+    function closeModal(){ document.getElementById('entryModal').classList.remove('active'); }
+    function refreshUI(){ document.querySelectorAll('#characterView, #locationView, #clanView, #govView, #otherView, #timelineView, #orgGraphView, #personRelationView, #changelogView').forEach(v=>v.style.display='none'); if(currentMode==='character'){ document.getElementById('characterView').style.display='block'; renderTable('character', characters, getFields('character')); } else if(currentMode==='location'){ document.getElementById('locationView').style.display='block'; renderTable('location', locations, getFields('location')); } else if(currentMode==='clan'){ document.getElementById('clanView').style.display='block'; renderTable('clan', clans, getFields('clan')); } else if(currentMode==='gov'){ document.getElementById('govView').style.display='block'; renderTable('gov', govs, getFields('gov')); } else if(currentMode==='other'){ document.getElementById('otherView').style.display='block'; renderTable('other', others, getFields('other')); } else if(currentMode==='timeline'){ document.getElementById('timelineView').style.display='flex'; renderTimelineTree(); } else if(currentMode==='org'){ document.getElementById('orgGraphView').style.display='block'; renderOrgGraph(); } else if(currentMode==='personRelation'){ document.getElementById('personRelationView').style.display='block'; renderPersonRelationGraph(); } else if(currentMode==='changelog'){ document.getElementById('changelogView').style.display='block'; renderChangelog(); } document.querySelectorAll('.mode-btn').forEach(btn=>{ if(btn.dataset.mode===currentMode) btn.classList.add('active'); else btn.classList.remove('active'); }); document.getElementById('globalCurrentYear').value = globalCurrentYear; }
+    function updateGlobalYear(){ let ny=document.getElementById('globalCurrentYear').value.trim(); if(ny) globalCurrentYear=ny; saveAll(); refreshUI(); showToast(`当前纪元: ${globalCurrentYear}`); }
+    function bindEvents(){ document.getElementById('modeSwitch').addEventListener('click',(e)=>{ let btn=e.target.closest('.mode-btn'); if(btn) currentMode=btn.dataset.mode; refreshUI(); }); document.getElementById('exportExcelBtn').addEventListener('click',exportToExcel); document.getElementById('importExcelBtn').addEventListener('click',()=>document.getElementById('fileExcelInput').click()); document.getElementById('fileExcelInput').addEventListener('change',e=>{ if(e.target.files.length) importExcel(e.target.files[0]); e.target.value=''; }); document.getElementById('updateGlobalYearBtn').addEventListener('click',updateGlobalYear); document.getElementById('resetOrgGraph')?.addEventListener('click',()=>renderOrgGraph()); document.getElementById('resetPersonGraph')?.addEventListener('click',()=>{ if(personCy) { personCy.layout({ name:'cose', idealEdgeLength:180, nodeRepulsion:10000, gravity:0.2, numIter:1500, animate:true }).run(); personCy.fit(); } else renderPersonRelationGraph(); }); document.getElementById('refreshPersonGraph')?.addEventListener('click',()=>renderPersonRelationGraph()); document.getElementById('addLogBtn')?.addEventListener('click',()=>openLogModal(null)); document.getElementById('closeLogBtn')?.addEventListener('click',()=>document.getElementById('logModal').classList.remove('active')); document.getElementById('saveLogBtn')?.addEventListener('click',saveLog); document.getElementById('closeTimelineBtn')?.addEventListener('click',()=>document.getElementById('timelineModal').classList.remove('active')); document.getElementById('saveTimelineBtn')?.addEventListener('click',saveTimeline); document.getElementById('closeModalBtn')?.addEventListener('click',closeModal); document.getElementById('logModal')?.addEventListener('click',(e)=>{ if(e.target===document.getElementById('logModal')) document.getElementById('logModal').classList.remove('active'); }); document.getElementById('timelineModal')?.addEventListener('click',(e)=>{ if(e.target===document.getElementById('timelineModal')) document.getElementById('timelineModal').classList.remove('active'); }); document.getElementById('entryModal')?.addEventListener('click',(e)=>{ if(e.target===document.getElementById('entryModal')) closeModal(); }); }
+    function init(){ loadData(); bindEvents(); refreshUI(); }
+    init();
+</script>
+</body>
+</html>
